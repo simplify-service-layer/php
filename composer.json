@@ -1,0 +1,16 @@
+{
+    "name": "dbwhddn10/php-functional-service",
+    "version": "2.1.0",
+    "authors": [
+        {
+            "name": "dbwhddn10",
+            "email": "dbwhddn10@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Dbwhddn10\\FService\\": "src/"
+        },
+    },
+    "license": "MIT"
+}
