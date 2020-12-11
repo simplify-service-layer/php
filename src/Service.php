@@ -11,14 +11,14 @@ class Service {
     const BIND_NAME_EXP = '/\{\{([a-z0-9\_\.\*]+)\}\}/';
 
     protected $childs;
-    protected $collectionResolver;
+    protected static $collectionResolver;
     protected $data;
     protected $errors;
     protected $inputs;
     protected $names;
     protected $processed;
     protected $validated;
-    protected $validationErrorsResolver;
+    protected static $validationErrorsResolver;
 
     public function __construct(array $inputs = [], array $names = [], $validated = [])
     {
@@ -40,11 +40,11 @@ class Service {
             $this->validate($key);
         }
 
-        $this->collectionResolver = function () {
+        static::$collectionResolver = function () {
 
             throw new \Exception('collectionResolver not exist');
         };
-        $this->validationErrorsResolver = function () {
+        static::$validationErrorsResolver = function () {
 
             throw new \Exception('validationErrorsResolver not exist');
         };
@@ -467,12 +467,12 @@ class Service {
 
     public static function setCollectionResolver(Closure $resolver)
     {
-        $this->collectionResolver = $resolver;
+        static::$collectionResolver = $resolver;
     }
 
     public static function setValidationErrorsResolver(Closure $resolver)
     {
-        $this->validationErrorsResolver = $resolver;
+        static::$validationErrorsResolver = $resolver;
     }
 
     public function totalErrors()
