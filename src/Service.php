@@ -5,32 +5,29 @@ namespace Dbwhddn10\FService;
 use Closure;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Illuminate\Validation\Factory as ValidationFactory;
 
 class Service {
 
     const BIND_NAME_EXP = '/\{\{([a-z0-9\_\.\*]+)\}\}/';
 
     protected $childs;
+    protected $collectionResolver;
     protected $data;
     protected $errors;
     protected $inputs;
     protected $names;
     protected $processed;
     protected $validated;
-
-    abstract protected function newCollection($items);
-
-    abstract protected function getValidationErrors($data, $rules, $names);
+    protected $validationErrorsResolver;
 
     public function __construct(array $inputs = [], array $names = [], $validated = [])
     {
-        $this->childs    = $this->newCollection();
-        $this->data      = $this->newCollection();
-        $this->errors    = $this->newCollection();
-        $this->inputs    = $this->newCollection($inputs);
-        $this->names     = $this->newCollection($names);
-        $this->validated = $this->newCollection(array_fill_keys($validated, true));
+        $this->childs    = $this->collectionResolver();
+        $this->data      = $this->collectionResolver();
+        $this->errors    = $this->collectionResolver();
+        $this->inputs    = $this->collectionResolver($inputs);
+        $this->names     = $this->collectionResolver($names);
+        $this->validated = $this->collectionResolver(array_fill_keys($validated, true));
         $this->processed = false;
 
         foreach ( $validated as $value )
@@ -42,6 +39,15 @@ class Service {
         {
             $this->validate($key);
         }
+
+        $this->collectionResolver = function () {
+
+            throw new \Exception('collectionResolver not exist');
+        };
+        $this->validationErrorsResolver = function () {
+
+            throw new \Exception('validationErrorsResolver not exist');
+        };
     }
 
     public function childs()
@@ -55,7 +61,7 @@ class Service {
 
         ksort($data);
 
-        return $this->newCollection($data);
+        return $this->collectionResolver($data);
     }
 
     public function errors()
@@ -74,7 +80,7 @@ class Service {
 
         $arr = array_merge($arr, static::getArrBindNames());
 
-        return $this->newCollection($arr);
+        return $this->collectionResolver($arr);
     }
 
     public static function getAllCallbackLists()
@@ -88,7 +94,7 @@ class Service {
 
         $arr = array_merge($arr, static::getArrCallbackLists());
 
-        return $this->newCollection($arr);
+        return $this->collectionResolver($arr);
     }
 
     public static function getAllLoaders()
@@ -102,7 +108,7 @@ class Service {
 
         $arr = array_merge($arr, static::getArrLoaders());
 
-        return $this->newCollection($arr);
+        return $this->collectionResolver($arr);
     }
 
     public static function getAllPromiseLists()
@@ -116,7 +122,7 @@ class Service {
 
         $arr = array_merge_recursive($arr, static::getArrPromiseLists());
 
-        return $this->newCollection($arr);
+        return $this->collectionResolver($arr);
     }
 
     public static function getAllRuleLists()
@@ -130,7 +136,7 @@ class Service {
 
         $arr = array_merge_recursive($arr, static::getArrRuleLists());
 
-        return $this->newCollection($arr);
+        return $this->collectionResolver($arr);
     }
 
     public static function getAllTraits()
@@ -145,7 +151,7 @@ class Service {
         $arr = array_merge($arr, static::getArrTraits());
         $arr = array_unique($arr);
 
-        return $this->newCollection($arr);
+        return $this->collectionResolver($arr);
     }
 
     public static function getArrBindNames()
@@ -459,6 +465,16 @@ class Service {
         return $this->data()->get('result');
     }
 
+    public static function setCollectionResolver(Closure $resolver)
+    {
+        $this->collectionResolver = $resolver;
+    }
+
+    public static function setValidationErrorsResolver(Closure $resolver)
+    {
+        $this->validationErrorsResolver = $resolver;
+    }
+
     public function totalErrors()
     {
         $errors = $this->errors()->flatten();
@@ -525,7 +541,7 @@ class Service {
 
         foreach ( $ruleList as $key => $rules )
         {
-            $newErrors = $this->getValidationErrors($data->toArray(), [$key => $rules], $this->names->toArray());
+            $newErrors = $this->validationErrorsResolver($data->toArray(), [$key => $rules], $this->names->toArray());
 
             if ( !empty($newErrors) )
             {
@@ -599,6 +615,6 @@ class Service {
 
         ksort($arr);
 
-        return $this->newCollection($arr);
+        return $this->collectionResolver($arr);
     }
 }
