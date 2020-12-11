@@ -1,6 +1,4 @@
 ```
-namespace Dbwhddn10\FService;
-
 use Dbwhddn10\FService\Service;
 
 class BaseService extends Service
