@@ -34,8 +34,6 @@ class GoogleClientService extends Service
                 if ( $now > $created + $expiresIn - 60 )
                 {
                     $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
-                    $model->access_token = json_encode($client->getAccessToken());
-                    $model->save();
                 }
 
                 return $client;
