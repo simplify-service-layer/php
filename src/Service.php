@@ -10,15 +10,15 @@ class Service {
 
     const BIND_NAME_EXP = '/\{\{([a-z0-9\_\.\*]+)\}\}/';
 
+    protected static $resolverForNewCollection;
+    protected static $resolverForGetValidationErrors;
     protected $childs;
-    protected static $collectionResolver;
     protected $data;
     protected $errors;
     protected $inputs;
     protected $names;
     protected $processed;
     protected $validated;
-    protected static $validationErrorsResolver;
 
     public function __construct(array $inputs = [], array $names = [], $validated = [])
     {
@@ -371,12 +371,12 @@ class Service {
 
     public static function getValidationErrors($data, $ruleLists, $names)
     {
-        return call_user_func_array(static::$validationErrorsResolver, [$data, $ruleLists, $names]);
+        return call_user_func_array(static::$resolverForGetValidationErrors, [$data, $ruleLists, $names]);
     }
 
     public static function newCollection($items=[])
     {
-        return call_user_func_array(static::$collectionResolver, [$items]);
+        return call_user_func_array(static::$resolverForNewCollection, [$items]);
     }
 
     protected function resolve($func)
@@ -484,14 +484,14 @@ class Service {
         }
     }
 
-    public static function setCollectionResolver(Closure $resolver)
+    public static function setResolverForNewCollection(Closure $resolver)
     {
-        static::$collectionResolver = $resolver;
+        static::$resolverForNewCollection = $resolver;
     }
 
-    public static function setValidationErrorsResolver(Closure $resolver)
+    public static function setResolverForGetValidationErrors(Closure $resolver)
     {
-        static::$validationErrorsResolver = $resolver;
+        static::$resolverForGetValidationErrors = $resolver;
     }
 
     public function totalErrors()
