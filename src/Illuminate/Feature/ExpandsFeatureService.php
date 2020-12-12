@@ -2,10 +2,10 @@
 
 namespace Dbwhddn10\FService\Illuminate\Feature;
 
-use Illuminate\Extend\Collection;
-use Illuminate\Extend\Model;
-use Dbwhddn10\FService\Service;
+use Dbwhddn10\FService\Illuminate\Collection;
 use Dbwhddn10\FService\Illuminate\Feature\QueryFeatureService;
+use Dbwhddn10\FService\Illuminate\Model;
+use Dbwhddn10\FService\Service;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class ExpandsFeatureService extends Service
