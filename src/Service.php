@@ -465,6 +465,24 @@ class Service {
         return $this->data()->get('result');
     }
 
+    public function runAfterCommitCallbacks()
+    {
+        foreach ( $this->childs as $child )
+        {
+            $child->runAfterCommitCallbacks();
+        }
+
+        $callbacks = $this->getAllCallbackLists()->filter(function ($value, $key) {
+
+            return preg_match('/:after_commit$/', $key);
+        });
+
+        foreach ( $callbacks as $callback )
+        {
+            $this->resolve($callback);
+        }
+    }
+
     public static function setCollectionResolver(Closure $resolver)
     {
         static::$collectionResolver = $resolver;
@@ -598,7 +616,10 @@ class Service {
                 }
             }
 
-            $this->resolve($callback);
+            if ( !preg_match('/:after_commit$/', $callbackKey) )
+            {
+                $this->resolve($callback);
+            }
         }
 
         if ( $this->validated->get($key) === false )
