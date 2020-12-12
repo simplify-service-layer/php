@@ -22,12 +22,12 @@ class Service {
 
     public function __construct(array $inputs = [], array $names = [], $validated = [])
     {
-        $this->childs    = $this->collectionResolver();
-        $this->data      = $this->collectionResolver();
-        $this->errors    = $this->collectionResolver();
-        $this->inputs    = $this->collectionResolver($inputs);
-        $this->names     = $this->collectionResolver($names);
-        $this->validated = $this->collectionResolver(array_fill_keys($validated, true));
+        $this->childs    = static::newCollection();
+        $this->data      = static::newCollection();
+        $this->errors    = static::newCollection();
+        $this->inputs    = static::newCollection($inputs);
+        $this->names     = static::newCollection($names);
+        $this->validated = static::newCollection(array_fill_keys($validated, true));
         $this->processed = false;
 
         foreach ( $validated as $value )
@@ -39,15 +39,6 @@ class Service {
         {
             $this->validate($key);
         }
-
-        static::$collectionResolver = function () {
-
-            throw new \Exception('collectionResolver not exist');
-        };
-        static::$validationErrorsResolver = function () {
-
-            throw new \Exception('validationErrorsResolver not exist');
-        };
     }
 
     public function childs()
@@ -61,7 +52,7 @@ class Service {
 
         ksort($data);
 
-        return $this->collectionResolver($data);
+        return static::newCollection($data);
     }
 
     public function errors()
@@ -80,7 +71,7 @@ class Service {
 
         $arr = array_merge($arr, static::getArrBindNames());
 
-        return $this->collectionResolver($arr);
+        return static::newCollection($arr);
     }
 
     public static function getAllCallbackLists()
@@ -94,7 +85,7 @@ class Service {
 
         $arr = array_merge($arr, static::getArrCallbackLists());
 
-        return $this->collectionResolver($arr);
+        return static::newCollection($arr);
     }
 
     public static function getAllLoaders()
@@ -108,7 +99,7 @@ class Service {
 
         $arr = array_merge($arr, static::getArrLoaders());
 
-        return $this->collectionResolver($arr);
+        return static::newCollection($arr);
     }
 
     public static function getAllPromiseLists()
@@ -122,7 +113,7 @@ class Service {
 
         $arr = array_merge_recursive($arr, static::getArrPromiseLists());
 
-        return $this->collectionResolver($arr);
+        return static::newCollection($arr);
     }
 
     public static function getAllRuleLists()
@@ -136,7 +127,7 @@ class Service {
 
         $arr = array_merge_recursive($arr, static::getArrRuleLists());
 
-        return $this->collectionResolver($arr);
+        return static::newCollection($arr);
     }
 
     public static function getAllTraits()
@@ -151,7 +142,7 @@ class Service {
         $arr = array_merge($arr, static::getArrTraits());
         $arr = array_unique($arr);
 
-        return $this->collectionResolver($arr);
+        return static::newCollection($arr);
     }
 
     public static function getArrBindNames()
@@ -378,6 +369,16 @@ class Service {
         return array_keys($rtn);
     }
 
+    public static function getValidationErrors($data, $ruleLists, $names)
+    {
+        return call_user_func_array(static::$validationErrorsResolver, [$data, $ruleLists, $names]);
+    }
+
+    public static function newCollection($items=[])
+    {
+        return call_user_func_array(static::$collectionResolver, [$items]);
+    }
+
     protected function resolve($func)
     {
         $resolver = \Closure::bind($func, $this);
@@ -559,7 +560,7 @@ class Service {
 
         foreach ( $ruleList as $key => $rules )
         {
-            $newErrors = $this->validationErrorsResolver($data->toArray(), [$key => $rules], $this->names->toArray());
+            $newErrors = static::getValidationErrors($data->toArray(), [$key => $rules], $this->names->toArray());
 
             if ( !empty($newErrors) )
             {
@@ -636,6 +637,6 @@ class Service {
 
         ksort($arr);
 
-        return $this->collectionResolver($arr);
+        return static::newCollection($arr);
     }
 }
