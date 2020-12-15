@@ -1,11 +1,10 @@
 <?php
 
-namespace Dbwhddn10\FService\Illuminate;
+namespace Dbwhddn10\FService\DB\Illuminate\Feature;
 
 use Dbwhddn10\FService\Service;
-use Dbwhddn10\FService\Illuminate\Feature\ModelFeatureService;
 
-class DeleteService extends Service
+class QueryFeatureService extends Service
 {
     public static function getArrBindNames()
     {
@@ -14,20 +13,20 @@ class DeleteService extends Service
 
     public static function getArrCallbackLists()
     {
-        return [
-            'result.model' => function ($model) {
-
-                $model->delete();
-            },
-        ];
+        return [];
     }
 
     public static function getArrLoaders()
     {
         return [
-            'result' => function () {
+            'model_class' => function () {
 
-                return null;
+                throw new \Exception;
+            },
+
+            'query' => function ($modelClass) {
+
+                return $modelClass::query();
             },
         ];
     }
@@ -44,8 +43,6 @@ class DeleteService extends Service
 
     public static function getArrTraits()
     {
-        return [
-            ModelFeatureService::class,
-        ];
+        return [];
     }
 }

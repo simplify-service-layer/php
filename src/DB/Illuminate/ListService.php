@@ -1,13 +1,13 @@
 <?php
 
-namespace Dbwhddn10\FService\Illuminate;
+namespace Dbwhddn10\FService\DB\Illuminate;
 
 use Dbwhddn10\FService\Service;
-use Dbwhddn10\FService\Illuminate\Feature\ExpandsFeatureService;
-use Dbwhddn10\FService\Illuminate\Feature\FieldsFeatureService;
-use Dbwhddn10\FService\Illuminate\Feature\ModelFeatureService;
+use Dbwhddn10\FService\DB\Illuminate\Feature\ExpandsFeatureService;
+use Dbwhddn10\FService\DB\Illuminate\Feature\FieldsFeatureService;
+use Dbwhddn10\FService\DB\Illuminate\Feature\OrderByFeatureService;
 
-class FindService extends Service
+class ListService extends Service
 {
     public static function getArrBindNames()
     {
@@ -22,9 +22,9 @@ class FindService extends Service
     public static function getArrLoaders()
     {
         return [
-            'result' => function ($model) {
+            'result' => function ($query) {
 
-                return $model;
+                return $query->get();
             },
         ];
     }
@@ -44,7 +44,7 @@ class FindService extends Service
         return [
             ExpandsFeatureService::class,
             FieldsFeatureService::class,
-            ModelFeatureService::class,
+            OrderByFeatureService::class,
         ];
     }
 }

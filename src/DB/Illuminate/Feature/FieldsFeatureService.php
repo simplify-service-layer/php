@@ -1,9 +1,9 @@
 <?php
 
-namespace Dbwhddn10\FService\Illuminate\Feature;
+namespace Dbwhddn10\FService\DB\Illuminate\Feature;
 
 use Dbwhddn10\FService\Service;
-use Dbwhddn10\FService\Illuminate\Feature\QueryFeatureService;
+use Dbwhddn10\FService\DB\Illuminate\Feature\QueryFeatureService;
 
 class FieldsFeatureService extends Service
 {

@@ -1,10 +1,10 @@
 <?php
 
-namespace Dbwhddn10\FService\Illuminate\Feature;
+namespace Dbwhddn10\FService\DB\Illuminate\Feature;
 
-use Dbwhddn10\FService\Illuminate\Collection;
-use Dbwhddn10\FService\Illuminate\Feature\QueryFeatureService;
-use Dbwhddn10\FService\Illuminate\Model;
+use Dbwhddn10\FService\DB\Illuminate\Collection;
+use Dbwhddn10\FService\DB\Illuminate\Feature\QueryFeatureService;
+use Dbwhddn10\FService\DB\Illuminate\Model;
 use Dbwhddn10\FService\Service;
 use Illuminate\Pagination\LengthAwarePaginator;
 

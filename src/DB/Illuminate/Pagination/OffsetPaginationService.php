@@ -1,11 +1,12 @@
 <?php
 
-namespace Dbwhddn10\FService\Illuminate\Pagination;
+namespace Dbwhddn10\FService\DB\Illuminate\Pagination;
 
 use Dbwhddn10\FService\Service;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Dbwhddn10\FService\Illuminate\SelectQueryService;
+use Dbwhddn10\FService\DB\Illuminate\SelectQueryService;
+use Dbwhddn10\FService\DB\SkipFeatureService;
 
 class OffsetPaginationService extends Service {
 
@@ -52,11 +53,6 @@ class OffsetPaginationService extends Service {
                         => $query,
                 ]];
             },
-
-            'skip' => function ($limit, $page) {
-
-                return ( $page - 1 ) * $limit;
-            },
         ];
     }
 
@@ -67,15 +63,14 @@ class OffsetPaginationService extends Service {
 
     public static function getArrRuleLists()
     {
-        return [
-            'page'
-                => ['required', 'integer', 'min:1'],
-        ];
+        return [];
     }
 
     public static function getArrTraits()
     {
-        return [];
+        return [
+            SkipFeatureService::class,
+        ];
     }
 
 }

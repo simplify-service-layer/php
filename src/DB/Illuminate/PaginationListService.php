@@ -1,14 +1,14 @@
 <?php
 
-namespace Dbwhddn10\FService\Illuminate;
+namespace Dbwhddn10\FService\DB\Illuminate;
 
 use Dbwhddn10\FService\Service;
-use Dbwhddn10\FService\Illuminate\Pagination\CursorPaginationService;
-use Dbwhddn10\FService\Illuminate\Pagination\OffsetPaginationService;
-use Dbwhddn10\FService\Illuminate\Feature\ExpandsFeatureService;
-use Dbwhddn10\FService\Illuminate\Feature\FieldsFeatureService;
-use Dbwhddn10\FService\Illuminate\Feature\LimitFeatureService;
-use Dbwhddn10\FService\Illuminate\Feature\OrderByFeatureService;
+use Dbwhddn10\FService\DB\Illuminate\Pagination\CursorPaginationService;
+use Dbwhddn10\FService\DB\Illuminate\Pagination\OffsetPaginationService;
+use Dbwhddn10\FService\DB\Illuminate\Feature\ExpandsFeatureService;
+use Dbwhddn10\FService\DB\Illuminate\Feature\FieldsFeatureService;
+use Dbwhddn10\FService\DB\Illuminate\Feature\LimitFeatureService;
+use Dbwhddn10\FService\DB\Illuminate\Feature\OrderByFeatureService;
 
 class PaginationListService extends Service
 {

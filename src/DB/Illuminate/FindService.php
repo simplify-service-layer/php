@@ -1,11 +1,13 @@
 <?php
 
-namespace Dbwhddn10\FService\Illuminate;
+namespace Dbwhddn10\FService\DB\Illuminate;
 
 use Dbwhddn10\FService\Service;
-use Dbwhddn10\FService\Illuminate\Feature\ModelFeatureService;
+use Dbwhddn10\FService\DB\Illuminate\Feature\ExpandsFeatureService;
+use Dbwhddn10\FService\DB\Illuminate\Feature\FieldsFeatureService;
+use Dbwhddn10\FService\DB\Illuminate\Feature\ModelFeatureService;
 
-class UpdatingService extends Service
+class FindService extends Service
 {
     public static function getArrBindNames()
     {
@@ -14,12 +16,7 @@ class UpdatingService extends Service
 
     public static function getArrCallbackLists()
     {
-        return [
-            'result.model' => function ($model) {
-
-                $model->save();
-            },
-        ];
+        return [];
     }
 
     public static function getArrLoaders()
@@ -45,6 +42,8 @@ class UpdatingService extends Service
     public static function getArrTraits()
     {
         return [
+            ExpandsFeatureService::class,
+            FieldsFeatureService::class,
             ModelFeatureService::class,
         ];
     }

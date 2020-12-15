@@ -1,9 +1,9 @@
 <?php
 
-namespace Dbwhddn10\FService\Illuminate;
+namespace Dbwhddn10\FService\DB\Illuminate;
 
 use Dbwhddn10\FService\Service;
-use Dbwhddn10\FService\Illuminate\Feature\ModelFeatureService;
+use Dbwhddn10\FService\DB\Illuminate\Feature\ModelFeatureService;
 
 class PivotDeleteService extends Service
 {

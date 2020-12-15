@@ -1,9 +1,10 @@
 <?php
 
-namespace Dbwhddn10\FService\Illuminate\Feature;
+namespace Dbwhddn10\FService\DB\Illuminate\Feature;
 
 use Dbwhddn10\FService\Service;
-use Dbwhddn10\FService\Illuminate\Feature\QueryFeatureService;
+use Dbwhddn10\FService\DB\Illuminate\Feature\QueryFeatureService;
+use Dbwhddn10\FService\DB\LimitFeatureService as BaseService;
 
 class LimitFeatureService extends Service
 {
@@ -24,12 +25,7 @@ class LimitFeatureService extends Service
 
     public static function getArrLoaders()
     {
-        return [
-            'limit' => function () {
-
-                return 30;
-            },
-        ];
+        return [];
     }
 
     public static function getArrPromiseLists()
@@ -39,15 +35,13 @@ class LimitFeatureService extends Service
 
     public static function getArrRuleLists()
     {
-        return [
-            'limit'
-                => ['required', 'integer', 'max:120', 'min:1'],
-        ];
+        return [];
     }
 
     public static function getArrTraits()
     {
         return [
+            BaseService::class,
             QueryFeatureService::class,
         ];
     }

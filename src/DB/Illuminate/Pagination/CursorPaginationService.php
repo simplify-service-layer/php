@@ -1,6 +1,6 @@
 <?php
 
-namespace Dbwhddn10\FService\Illuminate\Pagination;
+namespace Dbwhddn10\FService\DB\Illuminate\Pagination;
 
 use Dbwhddn10\FService\Service;
 
@@ -19,7 +19,7 @@ class CursorPaginationService extends Service
     public static function getArrLoaders()
     {
         return [
-            'result' => function ($cursor='', $limit='', $orderByArray, $query) {
+            'result' => function ($cursor='', $limit, $orderByArray, $query) {
 
                 $wheres = [];
                 $result = [];
