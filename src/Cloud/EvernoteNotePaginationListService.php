@@ -47,13 +47,13 @@ class EvernoteNotePaginationListService extends Service
 
             'filter.ascending' => function ($filter, $orderBy) {
 
-                $ascending = explode(' ', $orderBy)[1];
+                $orderType = explode(' ', $orderBy)[1];
 
-                if ( $filter->ascending == 'asc' )
+                if ( $orderType == 'asc' )
                 {
                     $filter->ascending = true;
                 }
-                else if ( $filter->ascending == 'desc' )
+                else if ( $orderType == 'desc' )
                 {
                     $filter->ascending = false;
                 }
