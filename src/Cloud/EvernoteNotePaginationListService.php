@@ -9,7 +9,7 @@ use Dbwhddn10\FService\Service;
 use EDAM\NoteStore\NoteFilter;
 use EDAM\Types\NoteSortOrder;
 
-class EvernoteNoteListService extends Service
+class EvernoteNotePaginationListService extends Service
 {
     public static function getArrBindNames()
     {
@@ -51,16 +51,21 @@ class EvernoteNoteListService extends Service
 
                 if ( $filter->ascending == 'asc' )
                 {
-                    $filter->ascending = $ascending;
+                    $filter->ascending = true;
                 }
                 else if ( $filter->ascending == 'desc' )
                 {
-                    $filter->ascending = $ascending;
+                    $filter->ascending = false;
                 }
                 else
                 {
                     throw new \Exception;
                 }
+            },
+
+            'filter.tagGuids' => function ($filter, $tagIds) {
+
+                $filter->tagGuids = explode(',', $tagIds);
             },
 
             'filter.words' => function ($filter, $words) {
@@ -78,11 +83,14 @@ class EvernoteNoteListService extends Service
                 return ['created asc', 'created desc', 'updated asc', 'updated desc', 'title asc', 'relevance desc'];
             },
 
-            'client' => function ($token) {
+            'client' => function ($token='') {
 
                 return [EvernoteNoteService::class, [
                     'token'
                         => $token,
+                ], [
+                    'token'
+                        => '{{token}}',
                 ]];
             },
 
@@ -115,6 +123,9 @@ class EvernoteNoteListService extends Service
                 => ['string', 'in:created asc,created desc,relevance desc,title asc,updated asc,updated desc'],
 
             'words'
+                => ['string'],
+
+            'tag_ids'
                 => ['string'],
         ];
     }
