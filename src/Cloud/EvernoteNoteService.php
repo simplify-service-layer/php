@@ -34,7 +34,10 @@ class EvernoteNoteService extends Service
 
     public static function getArrRuleLists()
     {
-        return [];
+        return [
+            'token'
+                => ['required', 'string'],
+        ];
     }
 
     public static function getArrTraits()
