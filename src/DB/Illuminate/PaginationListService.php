@@ -42,6 +42,8 @@ class PaginationListService extends Service
                         'query'
                             => $query,
                     ], [
+                        'limit'
+                            => '{{limit}}',
                         'page'
                             => '{{page}}',
                     ]];
