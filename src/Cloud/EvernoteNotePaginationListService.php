@@ -106,7 +106,18 @@ class EvernoteNotePaginationListService extends Service
 
             'result' => function ($client, $filter, $skip, $limit) {
 
-                return $client->findNotes($filter, $skip, $limit);
+                $store = $client->getAdvancedClient()->getNoteStore();
+                $spec  = new \EDAM\NoteStore\NotesMetadataResultSpec([
+                    'includeTitle' => true,
+                ]);
+                $list  = $store->findNotesMetadata($filter, $skip, $limit, $spec);
+
+                foreach ( $list->notes as $i => $note )
+                {
+                    $note->content = $store->getNoteContent($note->guid);
+                }
+
+                return $list;
             },
         ];
     }
