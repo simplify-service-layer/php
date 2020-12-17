@@ -109,6 +109,7 @@ class EvernoteNotePaginationListService extends Service
                 $store = $client->getAdvancedClient()->getNoteStore();
                 $spec  = new \EDAM\NoteStore\NotesMetadataResultSpec([
                     'includeTitle' => true,
+                    'includeTagGuids' => true,
                 ]);
                 $list  = $store->findNotesMetadata($filter, $skip, $limit, $spec);
 
