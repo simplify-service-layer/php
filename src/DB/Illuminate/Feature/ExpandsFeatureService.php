@@ -3,9 +3,9 @@
 namespace Dbwhddn10\FService\DB\Illuminate\Feature;
 
 use Dbwhddn10\FService\DB\Illuminate\Feature\QueryFeatureService;
+use Dbwhddn10\FService\Illuminate\Collection;
 use Dbwhddn10\FService\Illuminate\Model;
 use Dbwhddn10\FService\Service;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class ExpandsFeatureService extends Service
