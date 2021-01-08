@@ -23,9 +23,10 @@ class ExpandsFeatureService extends Service
         return [
             'result.expands' => function ($expands, $result) {
 
+                $expands = preg_split('/\s*,\s*/', $expands);
+
                 if ( $result instanceof Model )
                 {
-                    $expands = preg_split('/\s*,\s*/', $expands);
                     $collection = $result->newCollection();
                     $collection->push($result);
                 }
