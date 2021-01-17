@@ -1,10 +1,11 @@
 {
-    "name": "dbwhddn10/f-service-php",
-    "version": "2.1.0",
+    "name": "fn-service/php",
+    "version": "2.2.0",
+    "license": "MIT",
     "authors": [
         {
-            "name": "dbwhddn10",
-            "email": "dbwhddn10@gmail.com"
+            "email": "dbwhddn10@gmail.com",
+            "name": "jongwoo Yoo"
         }
     ],
     "require-dev": {
@@ -12,8 +13,8 @@
     },
     "autoload": {
         "psr-4": {
-            "Dbwhddn10\\FService\\": "src/"
+            "FnService\\": "src/",
+            "FnService\\Tests\\": "tests/"
         }
-    },
-    "license": "MIT"
+    }
 }

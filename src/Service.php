@@ -1,6 +1,6 @@
 <?php
 
-namespace Dbwhddn10\FService;
+namespace FnService;
 
 use Closure;
 use Illuminate\Support\Arr;

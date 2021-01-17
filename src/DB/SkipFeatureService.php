@@ -1,9 +1,9 @@
 <?php
 
-namespace Dbwhddn10\FService\DB;
+namespace FnService\DB;
 
-use Dbwhddn10\FService\Service;
-use Dbwhddn10\FService\DB\LimitFeatureService;
+use FnService\Service;
+use FnService\DB\LimitFeatureService;
 
 class SkipFeatureService extends Service
 {

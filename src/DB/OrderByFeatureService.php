@@ -1,8 +1,8 @@
 <?php
 
-namespace Dbwhddn10\FService\DB;
+namespace FnService\DB;
 
-use Dbwhddn10\FService\Service;
+use FnService\Service;
 
 class OrderByFeatureService extends Service
 {
