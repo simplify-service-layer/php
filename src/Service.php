@@ -214,7 +214,7 @@ class Service {
     {
         $key    = explode('.', $key)[0];
         $data   = $this->data();
-        $loader = $this->getAllLoaders()->offsetGet($key);
+        $loader = $this->getAllLoaders()->offsetExists($key) ? $this->getAllLoaders()->offsetGet($key) : null;
 
         if ( $data->offsetExists($key) )
         {
@@ -266,6 +266,8 @@ class Service {
             {
                 unset($arrValue[$i]);
                 $hasError = true;
+
+                $this->validated->offsetSet($key, false);
             }
         }
 
@@ -279,7 +281,7 @@ class Service {
 
     protected function getAvailableRulesWith($key)
     {
-        $rules   = $this->getAllRuleLists()->offsetGet($key) ? : [];
+        $rules   = $this->getAllRuleLists()->offsetExists($key) ? $this->getAllRuleLists()->offsetGet($key) : [];
         $mainKey = explode('.', $key)[0];
 
         if ( ! $this->getAllLoaders()->offsetExists($mainKey) && ! $this->inputs->offsetExists($mainKey) )
@@ -373,7 +375,7 @@ class Service {
 
         foreach ( $keys as $key )
         {
-            $deps = $this->getAllPromiseLists()->offsetGet($key) ? : [];
+            $deps = $this->getAllPromiseLists()->offsetExists($key) ? $this->getAllPromiseLists()->offsetGet($key) : [];
             $list = $this->getPromiseOrderedDependencies($deps);
             $list = array_merge($list, [$key]);
             $arr  = array_merge($list, $arr);
@@ -423,12 +425,13 @@ class Service {
     {
         while ( $boundKeys = $this->getBindKeys($name) )
         {
-            $key      = $boundKeys[0];
-            $pattern  = '/\{\{' . $key . '\}\}/';
-            $bindName = (new ArrayObject(array_merge(
+            $key       = $boundKeys[0];
+            $pattern   = '/\{\{' . $key . '\}\}/';
+            $bindNames = new ArrayObject(array_merge(
                 $this->getAllBindNames()->getArrayCopy(),
                 $this->names->getArrayCopy(),
-            )))->offsetGet($key);
+            ));
+            $bindName  = $bindNames->offsetExists($key) ? $bindNames->offsetGet($key) : null;
 
             if ( $bindName == null )
             {
@@ -534,7 +537,7 @@ class Service {
             return $this->validated->offsetGet($key);
         }
 
-        $promiseList = $this->getAllPromiseLists()->offsetGet($key) ? : [];
+        $promiseList = $this->getAllPromiseLists()->offsetExists($key) ? $this->getAllPromiseLists()->offsetGet($key) : [];
 
         foreach ( $promiseList as $promise )
         {
@@ -550,8 +553,8 @@ class Service {
             }
         }
 
-        $loader = $this->getAllLoaders()->offsetGet($key);
-        $deps   = $this->getClosureDependencies($loader);
+        $loader = $this->getAllLoaders()->offsetExists($key) ? $this->getAllLoaders()->offsetGet($key) : null;
+        $deps   = $loader ? $this->getClosureDependencies($loader) : [];
 
         foreach ( $deps as $dep )
         {
@@ -561,7 +564,7 @@ class Service {
             }
         }
 
-        if ( $this->validated->offsetGet($key) === false )
+        if ( $this->validated->offsetExists($key) && $this->validated->offsetGet($key) === false )
         {
             return false;
         }
@@ -580,21 +583,21 @@ class Service {
 
             if ( !empty($newErrors) )
             {
-                $oldErrors = $this->errors->offsetGet($key) ? : [];
+                $oldErrors = $this->errors->offsetExists($key) ? $this->errors->offsetGet($key) : [];
                 $errors    = array_merge($oldErrors, $newErrors);
 
                 $this->errors->offsetSet($key, $errors);
             }
         }
 
-        if ( ! empty($this->errors->offsetGet($key)) || ($this->childs->offsetGet($key) && ! empty($this->childs->offsetGet($key)->totalErrors())) )
+        if ( $this->errors->offsetExists($key) )
         {
             $this->validated->offsetSet($key, false);
 
             return false;
         }
 
-        if ( $this->validated->offsetGet($key) === false )
+        if ( $this->validated->offsetExists($key) && $this->validated->offsetGet($key) === false )
         {
             return false;
         }
