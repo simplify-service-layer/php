@@ -1,6 +1,6 @@
 <?php
 
-namespace FnService;
+namespace FunctionalCoding;
 
 use ArrayObject;
 use Closure;

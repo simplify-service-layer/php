@@ -1,7 +1,6 @@
 {
-    "name": "fn-service/php",
+    "name": "functional-coding/php",
     "version": "2.2.0",
-    "license": "MIT",
     "authors": [
         {
             "email": "dbwhddn10@gmail.com",
@@ -13,8 +12,9 @@
     },
     "autoload": {
         "psr-4": {
-            "FnService\\": "src/",
-            "FnService\\Tests\\": "tests/"
+            "FunctionalCoding\\": "src/",
+            "FunctionalCoding\\Tests\\": "tests/"
         }
-    }
+    },
+    "license": "MIT"
 }

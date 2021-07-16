@@ -1,9 +1,9 @@
 <?php
 
-namespace FnService\Tests;
+namespace FunctionalCoding\Tests;
 
 use PHPUnit\Framework\TestCase;
-use FnService\Service;
+use FunctionalCoding\Service;
 
 class ServiceTest extends TestCase {
 
