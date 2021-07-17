@@ -17,8 +17,9 @@ class Service {
     protected ArrayObject $names;
     protected ArrayObject $validated;
     protected bool $processed;
+    protected Service $parent;
 
-    public function __construct(array $inputs = [], array $names = [])
+    public function __construct(array $inputs = [], array $names = [], $parent = null)
     {
         $this->childs    = new ArrayObject;
         $this->data      = new ArrayObject;
@@ -26,6 +27,7 @@ class Service {
         $this->inputs    = new ArrayObject($inputs);
         $this->names     = new ArrayObject($names);
         $this->validated = new ArrayObject;
+        $this->parent    = null;
         $this->processed = false;
 
         foreach ( $this->inputs as $key => $value )
@@ -172,10 +174,12 @@ class Service {
     {
         isset($value[1])? : $value[1] = [];
         isset($value[2])? : $value[2] = [];
+        isset($value[3])? : $value[3] = null;
 
         $class  = $value[0];
         $data   = $value[1];
         $names  = $value[2];
+        $parent = $value[3];
 
         foreach ( $data as $key => $value )
         {
@@ -185,7 +189,7 @@ class Service {
             }
         }
 
-        return new $class($data, $names);
+        return new $class($data, $names, $parent);
     }
 
     public function inputs()
@@ -249,6 +253,7 @@ class Service {
             }
 
             isset($value[2])? : $value[2] = [];
+            isset($value[3])? : $value[3] = $this;
 
             foreach ( $value[2] as $k => $name )
             {
@@ -472,7 +477,7 @@ class Service {
             $this->processed = true;
         }
 
-        if ( ! empty($this->totalErrors()) )
+        if ( ! empty($this->parent) && ! empty($this->totalErrors()) )
         {
             return $this->resolveError();
         }
