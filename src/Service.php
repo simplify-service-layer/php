@@ -67,13 +67,13 @@ class Service {
         return new ArrayObject($arr);
     }
 
-    public static function getAllCallbackLists()
+    public static function getAllCallbacks()
     {
         $arr = [];
 
         foreach ( [...static::getAllTraits(), static::class] as $class )
         {
-            $arr = array_merge($arr, $class::getArrCallbackLists());
+            $arr = array_merge($arr, $class::getArrCallbacks());
         }
 
         return new ArrayObject($arr);
@@ -135,7 +135,7 @@ class Service {
         return [];
     }
 
-    public static function getArrCallbackLists()
+    public static function getArrCallbacks()
     {
         return [];
     }
@@ -487,7 +487,7 @@ class Service {
             $child->runAfterCommitCallbacks();
         }
 
-        $callbacks = array_filter($this->getAllCallbackLists()->getArrayCopy(), function ($value) {
+        $callbacks = array_filter($this->getAllCallbacks()->getArrayCopy(), function ($value) {
 
             return preg_match('/:after_commit$/', $value);
         }, ARRAY_FILTER_USE_KEY);
@@ -608,7 +608,7 @@ class Service {
 
             return preg_match('/^'.$key.'\\./', $value);
         });
-        $callbackKeys = array_filter(array_keys($this->getAllCallbackLists()->getArrayCopy()), function ($value) use ($key) {
+        $callbackKeys = array_filter(array_keys($this->getAllCallbacks()->getArrayCopy()), function ($value) use ($key) {
 
             return preg_match('/^'.$key.'\\./', $value);
         });
@@ -618,7 +618,7 @@ class Service {
 
         foreach ( $callbackKeys as $callbackKey )
         {
-            $callback = $this->getAllCallbackLists()->offsetGet($callbackKey);
+            $callback = $this->getAllCallbacks()->offsetGet($callbackKey);
             $deps     = $this->getClosureDependencies($callback);
 
             foreach ( $deps as $dep )
