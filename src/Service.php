@@ -59,12 +59,10 @@ class Service {
     {
         $arr = [];
 
-        foreach ( static::getAllTraits() as $class )
+        foreach ( [...static::getAllTraits(), static::class] as $class )
         {
             $arr = array_merge($arr, $class::getArrBindNames());
         }
-
-        $arr = array_merge($arr, static::getArrBindNames());
 
         return new ArrayObject($arr);
     }
@@ -73,12 +71,10 @@ class Service {
     {
         $arr = [];
 
-        foreach ( static::getAllTraits() as $class )
+        foreach ( [...static::getAllTraits(), static::class] as $class )
         {
             $arr = array_merge($arr, $class::getArrCallbackLists());
         }
-
-        $arr = array_merge($arr, static::getArrCallbackLists());
 
         return new ArrayObject($arr);
     }
@@ -87,12 +83,10 @@ class Service {
     {
         $arr = [];
 
-        foreach ( static::getAllTraits() as $class )
+        foreach ( [...static::getAllTraits(), static::class] as $class )
         {
             $arr = array_merge($arr, $class::getArrLoaders());
         }
-
-        $arr = array_merge($arr, static::getArrLoaders());
 
         return new ArrayObject($arr);
     }
@@ -101,12 +95,10 @@ class Service {
     {
         $arr = [];
 
-        foreach ( static::getAllTraits() as $class )
+        foreach ( [...static::getAllTraits(), static::class] as $class )
         {
             $arr = array_merge_recursive($arr, $class::getArrPromiseLists());
         }
-
-        $arr = array_merge_recursive($arr, static::getArrPromiseLists());
 
         return new ArrayObject($arr);
     }
@@ -115,12 +107,10 @@ class Service {
     {
         $arr = [];
 
-        foreach ( static::getAllTraits() as $class )
+        foreach ( [...static::getAllTraits(), static::class] as $class )
         {
             $arr = array_merge_recursive($arr, $class::getArrRuleLists());
         }
-
-        $arr = array_merge_recursive($arr, static::getArrRuleLists());
 
         return new ArrayObject($arr);
     }
