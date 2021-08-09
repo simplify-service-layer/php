@@ -2,20 +2,22 @@
 
 namespace FunctionalCoding\Tests;
 
-use PHPUnit\Framework\TestCase;
 use FunctionalCoding\Service;
+use PHPUnit\Framework\TestCase;
 
-class ServiceTest extends TestCase {
-
+/**
+ * @internal
+ * @coversNothing
+ */
+class ServiceTest extends TestCase
+{
     public function testWhenBasicCase()
     {
-        $service = new class extends Service
-        {
+        $service = new class() extends Service {
             public static function getArrBindNames()
             {
                 return [
-                    'result'
-                    => 'name for result',
+                    'result' => 'name for result',
                 ];
             }
 
@@ -23,7 +25,6 @@ class ServiceTest extends TestCase {
             {
                 return [
                     'result' => function () {
-
                         return 'result value';
                     },
                 ];
@@ -32,8 +33,7 @@ class ServiceTest extends TestCase {
             public static function getArrRuleLists()
             {
                 return [
-                    'result'
-                    => ['required', 'string'],
+                    'result' => ['required', 'string'],
                 ];
             }
         };
@@ -42,13 +42,11 @@ class ServiceTest extends TestCase {
 
         $this->assertEquals($service->errors()->all(), []);
 
-        $service = new class extends Service
-        {
+        $service = new class() extends Service {
             public static function getArrBindNames()
             {
                 return [
-                    'result'
-                    => 'name for result',
+                    'result' => 'name for result',
                 ];
             }
 
@@ -56,7 +54,6 @@ class ServiceTest extends TestCase {
             {
                 return [
                     'result' => function () {
-
                         return ['aaa', 'bbb', 'ccc'];
                     },
                 ];
@@ -65,8 +62,7 @@ class ServiceTest extends TestCase {
             public static function getArrRuleLists()
             {
                 return [
-                    'result'
-                    => ['required', 'string'],
+                    'result' => ['required', 'string'],
                 ];
             }
         };
@@ -78,16 +74,11 @@ class ServiceTest extends TestCase {
 
     public function testWhenInputValueIsNotEmpty()
     {
-        $service = new class([
-            'result'
-            => 'result value',
-        ]) extends Service
-        {
+        $service = new class(['result' => 'result value']) extends Service {
             public static function getArrBindNames()
             {
                 return [
-                    'result'
-                    => 'name for key1',
+                    'result' => 'name for key1',
                 ];
             }
 
@@ -99,8 +90,7 @@ class ServiceTest extends TestCase {
             public static function getArrRuleLists()
             {
                 return [
-                    'result'
-                    => ['required'],
+                    'result' => ['required'],
                 ];
             }
         };
@@ -112,14 +102,7 @@ class ServiceTest extends TestCase {
 
     public function testWhenBindNameValueIsNotEmpty()
     {
-        $service = new class([
-            'result'
-            => 'result value',
-        ], [
-            'result'
-            => 'result name',
-        ]) extends Service
-        {
+        $service = new class(['result' => 'result value'], ['result' => 'result name']) extends Service {
             public static function getArrBindNames()
             {
                 return [];
@@ -133,8 +116,7 @@ class ServiceTest extends TestCase {
             public static function getArrRuleLists()
             {
                 return [
-                    'result'
-                    => ['required'],
+                    'result' => ['required'],
                 ];
             }
         };
@@ -146,30 +128,22 @@ class ServiceTest extends TestCase {
 
     public function testWhenInputValueIsServiceInitable()
     {
-        $service = new class extends Service
-        {
+        $service = new class() extends Service {
             public static function getArrLoaders()
             {
                 return [
                     'result' => function () {
-
                         return 'child result value';
                     },
                 ];
             }
         };
 
-        $service = new class([
-            'result'
-            => [get_class($service)],
-        ], [
-        ]) extends Service
-        {
+        $service = new class(['result' => [get_class($service)]], []) extends Service {
             public static function getArrBindNames()
             {
                 return [
-                    'result'
-                    => 'parent result name',
+                    'result' => 'parent result name',
                 ];
             }
 
@@ -181,8 +155,7 @@ class ServiceTest extends TestCase {
             public static function getArrRuleLists()
             {
                 return [
-                    'result'
-                    => ['required'],
+                    'result' => ['required'],
                 ];
             }
         };
@@ -195,33 +168,22 @@ class ServiceTest extends TestCase {
 
     public function testWhenInputValueIsBatchService()
     {
-        $service = new class extends Service
-        {
+        $service = new class() extends Service {
             public static function getArrLoaders()
             {
                 return [
                     'result' => function () {
-
                         return 'child result value';
                     },
                 ];
             }
         };
 
-        $service = new class([
-            'result'
-            => [
-                [get_class($service)],
-                [get_class($service)],
-            ],
-        ], [
-        ]) extends Service
-        {
+        $service = new class(['result' => [[get_class($service)], [get_class($service)]]], []) extends Service {
             public static function getArrBindNames()
             {
                 return [
-                    'result'
-                    => 'parent result name',
+                    'result' => 'parent result name',
                 ];
             }
 
@@ -233,8 +195,7 @@ class ServiceTest extends TestCase {
             public static function getArrRuleLists()
             {
                 return [
-                    'result'
-                    => ['required'],
+                    'result' => ['required'],
                 ];
             }
         };
