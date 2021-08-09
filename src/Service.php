@@ -17,9 +17,9 @@ class Service {
     protected ArrayObject $names;
     protected ArrayObject $validated;
     protected bool $processed;
-    protected Service $parent;
+    protected $parent;
 
-    public function __construct(array $inputs = [], array $names = [], $parent = null)
+    public function __construct(array $inputs = [], array $names = [], Service $parent = null)
     {
         $this->childs    = new ArrayObject;
         $this->data      = new ArrayObject;
