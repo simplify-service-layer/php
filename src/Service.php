@@ -296,32 +296,31 @@ class Service
         }
 
         $value = $this->resolve($loader);
-        $isArray = is_array($value) && array_values($value) === $value && !static::isInitable($value);
-        $arrValue = $isArray ? $value : [$value];
-        $isService = static::isInitable($arrValue[0]);
+        $isBatchService = is_array($value) && array_values($value) === $value && !empty($value) && static::isInitable($value[0]);
+        $values = $isBatchService ? $value : [$value];
         $hasError = false;
 
-        foreach ($arrValue as $i => $value) {
-            if (!$isService) {
+        foreach ($values as $i => $v) {
+            if (!static::isInitable($v)) {
                 break;
             }
 
-            isset($value[2]) ?: $value[2] = [];
-            isset($value[3]) ?: $value[3] = $this;
+            isset($v[2]) ?: $v[2] = [];
+            isset($v[3]) ?: $v[3] = $this;
 
-            foreach ($value[2] as $k => $name) {
-                $value[2][$k] = $this->resolveBindName($name);
+            foreach ($v[2] as $k => $name) {
+                $v[2][$k] = $this->resolveBindName($name);
             }
 
-            $service = static::initService($value);
-            $value = $service->run();
+            $service = static::initService($v);
+            $resolved = $service->run();
 
-            $this->childs->offsetSet($isArray ? $key : $key.'.'.$i, $service);
+            $this->childs->offsetSet($isBatchService ? $key.'.'.$i : $key, $service);
 
-            $arrValue[$i] = $value;
+            $values[$i] = $resolved;
 
-            if ($this->isResolveError($value)) {
-                unset($arrValue[$i]);
+            if ($this->isResolveError($resolved)) {
+                unset($values[$i]);
                 $hasError = true;
 
                 $this->validated->offsetSet($key, false);
@@ -329,7 +328,7 @@ class Service
         }
 
         if (!$hasError) {
-            $data->offsetSet($key, $isArray ? $arrValue : $arrValue[0]);
+            $data->offsetSet($key, $isBatchService ? $values : $values[0]);
         }
 
         return $data;
