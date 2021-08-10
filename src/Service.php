@@ -296,7 +296,7 @@ class Service
         }
 
         $value = $this->resolve($loader);
-        $isArray = is_array($value) && !static::isInitable($value);
+        $isArray = is_array($value) && array_values($value) === $value && !static::isInitable($value);
         $arrValue = $isArray ? $value : [$value];
         $isService = static::isInitable($arrValue[0]);
         $hasError = false;
