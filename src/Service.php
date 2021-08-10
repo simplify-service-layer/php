@@ -17,9 +17,8 @@ class Service
     protected ArrayObject $names;
     protected ArrayObject $validated;
     protected bool $processed;
-    protected $parent;
 
-    public function __construct(array $inputs = [], array $names = [], Service $parent = null)
+    public function __construct(array $inputs = [], array $names = [])
     {
         $this->childs = new ArrayObject();
         $this->data = new ArrayObject();
@@ -27,7 +26,6 @@ class Service
         $this->inputs = new ArrayObject($inputs);
         $this->names = new ArrayObject($names);
         $this->validated = new ArrayObject();
-        $this->parent = null;
         $this->processed = false;
 
         foreach ($this->inputs as $key => $value) {
@@ -206,12 +204,12 @@ class Service
             $this->processed = true;
         }
 
-        if (!empty($this->parent) && !empty($this->totalErrors())) {
-            return $this->resolveError();
+        if (empty($this->totalErrors()) && !$this->data()->offsetExists('result')) {
+            throw new \Exception('result data key is not exists in '.static::class);
         }
 
-        if (!$this->data()->offsetExists('result')) {
-            throw new \Exception('result data key is not exists in '.static::class);
+        if (!empty($this->totalErrors())) {
+            return $this->resolveError();
         }
 
         return $this->data()->offsetGet('result');
@@ -242,7 +240,7 @@ class Service
         $arr = $this->errors()->getArrayCopy();
         $errors = [];
 
-        array_walk_recursive($arr, function ($value) use ($errors) {
+        array_walk_recursive($arr, function ($value) use (&$errors) {
             $errors[] = $value;
         });
 
