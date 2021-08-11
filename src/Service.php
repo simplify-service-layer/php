@@ -294,6 +294,11 @@ class Service
         }
 
         $value = $this->resolve($loader);
+
+        if ($this->isResolveError($value)) {
+            return $data;
+        }
+
         $isBatchService = is_array($value) && array_values($value) === $value && !empty($value) && static::isInitable($value[0]);
         $values = $isBatchService ? $value : [$value];
         $hasError = false;
