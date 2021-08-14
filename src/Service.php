@@ -189,15 +189,15 @@ class Service
     public function run()
     {
         if (!$this->processed) {
-            foreach ($this->inputs()->getArrayCopy() as $key => $value) {
+            foreach (array_keys((array) $this->inputs()) as $key) {
                 $this->validate($key);
             }
 
-            foreach ($this->getAllRuleLists()->getArrayCopy() as $key => $value) {
+            foreach (array_keys((array) $this->getAllRuleLists()) as $key) {
                 $this->validate(explode('.', $key)[0]);
             }
 
-            foreach ($this->getAllLoaders()->getArrayCopy() as $key => $value) {
+            foreach (array_keys((array) $this->getAllLoaders()) as $key) {
                 $this->validate($key);
             }
 
