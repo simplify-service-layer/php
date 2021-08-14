@@ -272,7 +272,7 @@ class Service
         return is_object($value) && $value instanceof $errorClass;
     }
 
-    protected function getAvailableDataWith($key)
+    protected function getAvailableData($key)
     {
         $key = explode('.', $key)[0];
         $data = $this->data();
@@ -337,7 +337,7 @@ class Service
         return $data;
     }
 
-    protected function getAvailableRuleListWith($key)
+    protected function getAvailableRuleList($key)
     {
         $ruleList = $this->getAllRuleLists()->offsetExists($key) ? $this->getAllRuleLists()->offsetGet($key) : [];
         $mainKey = explode('.', $key)[0];
@@ -521,11 +521,11 @@ class Service
             return false;
         }
 
-        $ruleLists = [$key => $this->getAvailableRuleListWith($key)];
-        $data = $this->getAvailableDataWith($key);
+        $ruleLists = [$key => $this->getAvailableRuleList($key)];
+        $data = $this->getAvailableData($key);
 
         if ($this->getAllRuleLists()->offsetExists($key.'.*')) {
-            $ruleLists[$key.'.*'] = $this->getAvailableRuleListWith($key.'.*');
+            $ruleLists[$key.'.*'] = $this->getAvailableRuleList($key.'.*');
         }
 
         foreach ($ruleLists as $key => $ruleList) {
