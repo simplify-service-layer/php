@@ -337,24 +337,24 @@ class Service
         return $data;
     }
 
-    protected function getAvailableRulesWith($key)
+    protected function getAvailableRuleListWith($key)
     {
-        $rules = $this->getAllRuleLists()->offsetExists($key) ? $this->getAllRuleLists()->offsetGet($key) : [];
+        $ruleList = $this->getAllRuleLists()->offsetExists($key) ? $this->getAllRuleLists()->offsetGet($key) : [];
         $mainKey = explode('.', $key)[0];
 
         if (!$this->getAllLoaders()->offsetExists($mainKey) && !$this->inputs->offsetExists($mainKey)) {
-            $rules = array_filter($rules, function ($rule) {
+            $ruleList = array_filter($ruleList, function ($rule) {
                 return $this->isRequiredRule($rule);
             });
         }
 
-        if (empty($rules)) {
+        if (empty($ruleList)) {
             return [];
         }
 
         $this->names->offsetSet($key, $this->resolveBindName('{{'.$key.'}}'));
 
-        foreach ($rules as $i => $rule) {
+        foreach ($ruleList as $i => $rule) {
             $bindKeys = $this->getBindKeys($rule);
 
             foreach ($bindKeys as $bindKey) {
@@ -363,7 +363,7 @@ class Service
                 if (!$this->validate($bindKey)) {
                     $this->validated->offsetSet($mainKey, false);
 
-                    unset($rules[$i]);
+                    unset($ruleList[$i]);
 
                     continue;
                 }
@@ -373,12 +373,12 @@ class Service
                 }
             }
 
-            if (array_key_exists($i, $rules)) {
-                $rules[$i] = preg_replace(static::BIND_NAME_EXP, '$1', $rule);
+            if (array_key_exists($i, $ruleList)) {
+                $ruleList[$i] = preg_replace(static::BIND_NAME_EXP, '$1', $rule);
             }
         }
 
-        return array_values($rules);
+        return array_values($ruleList);
     }
 
     protected function getBindKeys(string $str)
@@ -521,15 +521,15 @@ class Service
             return false;
         }
 
-        $ruleList = [$key => $this->getAvailableRulesWith($key)];
+        $ruleLists = [$key => $this->getAvailableRuleListWith($key)];
         $data = $this->getAvailableDataWith($key);
 
         if ($this->getAllRuleLists()->offsetExists($key.'.*')) {
-            $ruleList[$key.'.*'] = $this->getAvailableRulesWith($key.'.*');
+            $ruleLists[$key.'.*'] = $this->getAvailableRuleListWith($key.'.*');
         }
 
-        foreach ($ruleList as $key => $rules) {
-            $newErrors = $this->getValidationErrors($data->getArrayCopy(), [$key => $rules], $this->names->getArrayCopy());
+        foreach ($ruleLists as $key => $ruleList) {
+            $newErrors = $this->getValidationErrors($data->getArrayCopy(), [$key => $ruleList], $this->names->getArrayCopy());
 
             if (!empty($newErrors)) {
                 $oldErrors = $this->errors->offsetExists($key) ? $this->errors->offsetGet($key) : [];
