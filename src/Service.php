@@ -529,12 +529,9 @@ class Service
         }
 
         foreach ($ruleLists as $key => $ruleList) {
-            $newErrors = $this->getValidationErrors($data->getArrayCopy(), [$key => $ruleList], $this->names->getArrayCopy());
+            $errors = $this->getValidationErrors($data->getArrayCopy(), [$key => $ruleList], $this->names->getArrayCopy());
 
-            if (!empty($newErrors)) {
-                $oldErrors = $this->errors->offsetExists($key) ? $this->errors->offsetGet($key) : [];
-                $errors = array_merge($oldErrors, $newErrors);
-
+            if (!empty($errors)) {
                 $this->errors->offsetSet($key, $errors);
             }
         }
