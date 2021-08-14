@@ -348,11 +348,9 @@ class Service
             });
         }
 
-        if (empty($ruleList)) {
-            return [];
+        if (!empty($ruleList)) {
+            $this->names->offsetSet($key, $this->resolveBindName('{{'.$key.'}}'));
         }
-
-        $this->names->offsetSet($key, $this->resolveBindName('{{'.$key.'}}'));
 
         foreach ($ruleList as $i => $rule) {
             $bindKeys = $this->getBindKeys($rule);
