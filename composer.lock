@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "eaf5a7a825665793f5616d1cf02d1e6a",
+    "content-hash": "82be9e7da145b022e0eb53265d306579",
     "packages": [],
     "packages-dev": [
         {
@@ -374,7 +374,7 @@
             "time": "2020-05-25T17:44:05+00:00"
         },
         {
-            "name": "fabpot/php-cs-fixer",
+            "name": "friendsofphp/php-cs-fixer",
             "version": "v3.0.2",
             "source": {
                 "type": "git",
@@ -459,7 +459,6 @@
                     "type": "github"
                 }
             ],
-            "abandoned": "friendsofphp/php-cs-fixer",
             "time": "2021-08-04T19:28:19+00:00"
         },
         {
