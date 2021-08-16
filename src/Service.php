@@ -101,7 +101,15 @@ class Service
         $arr = [];
 
         foreach ([...static::getAllTraits(), static::class] as $class) {
-            $arr = array_merge_recursive($arr, $class::getArrRuleLists());
+            foreach ($class::getArrRuleLists() as $key => $ruleList) {
+                foreach ($ruleList as $rule) {
+                    if (isset($arr[$key][$rule])) {
+                        throw new \Exception('duplicated rule exist in same key.');
+                    }
+
+                    $arr[$key][$rule] = $class;
+                }
+            }
         }
 
         return new ArrayObject($arr);
@@ -345,14 +353,14 @@ class Service
         if (!$this->getAllLoaders()->offsetExists($mainKey) && !$this->inputs->offsetExists($mainKey)) {
             $ruleList = array_filter($ruleList, function ($rule) {
                 return $this->isRequiredRule($rule);
-            });
+            }, ARRAY_FILTER_USE_KEY);
         }
 
         if (!empty($ruleList)) {
             $this->names->offsetSet($key, $this->resolveBindName('{{'.$key.'}}'));
         }
 
-        foreach ($ruleList as $i => $rule) {
+        foreach ($ruleList as $rule => $class) {
             $bindKeys = $this->getBindKeys($rule);
 
             foreach ($bindKeys as $bindKey) {
@@ -361,7 +369,7 @@ class Service
                 if (!$this->validate($bindKey)) {
                     $this->validated->offsetSet($mainKey, false);
 
-                    unset($ruleList[$i]);
+                    unset($ruleList[$rule]);
 
                     continue;
                 }
@@ -371,12 +379,13 @@ class Service
                 }
             }
 
-            if (array_key_exists($i, $ruleList)) {
-                $ruleList[$i] = preg_replace(static::BIND_NAME_EXP, '$1', $rule);
+            if (array_key_exists($rule, $ruleList)) {
+                unset($ruleList[$rule]);
+                $ruleList[preg_replace(static::BIND_NAME_EXP, '$1', $rule)] = $class;
             }
         }
 
-        return array_values($ruleList);
+        return $ruleList;
     }
 
     protected function getBindKeys(string $str)
@@ -527,7 +536,7 @@ class Service
         }
 
         foreach ($ruleLists as $key => $ruleList) {
-            $errors = $this->getValidationErrors($data->getArrayCopy(), [$key => $ruleList], $this->names->getArrayCopy());
+            $errors = $this->getValidationErrors($key, $data->getArrayCopy(), $ruleList, $this->names->getArrayCopy());
 
             if (!empty($errors)) {
                 $this->errors->offsetSet($key, $errors);
