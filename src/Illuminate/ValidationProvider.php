@@ -40,6 +40,10 @@ class ValidationProvider extends \Illuminate\Support\ServiceProvider
         $dependentRules = include $validationPath.'dependentRules.php';
         $messages = include $validationPath.'lang\\'.$locale.'.php';
 
+        foreach ($validators as $i => $v) {
+            $validators[$i] = \Closure::bind($v, new \ArrayObject($validators));
+        }
+
         if (in_array($rule, $implicitRules) && isset($validators[$rule])) {
             $validator->addImplicitExtension($rule, $validators[$rule]);
         } elseif (in_array($rule, $dependentRules) && isset($validators[$rule])) {
