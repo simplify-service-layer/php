@@ -3,8 +3,8 @@
 namespace FunctionalCoding\Illuminate;
 
 use FunctionalCoding\Service;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Validator;
 
 class ValidationProvider extends \Illuminate\Support\ServiceProvider
 {
@@ -20,7 +20,9 @@ class ValidationProvider extends \Illuminate\Support\ServiceProvider
             $locale = $this->app instanceof Application ? $this->app->getLocale() : 'en';
 
             foreach ($ruleList as $rule => $class) {
-                $this->extend($validator, $key, $rule, $locale, $class);
+                if (!preg_match('/^App/', $class)) {
+                    $this->extend($validator, $key, $rule, $locale, $class);
+                }
             }
 
             $validator->passes();
