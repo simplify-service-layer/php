@@ -46,6 +46,10 @@ class ValidationProvider extends \Illuminate\Support\ServiceProvider
             $validators[$i] = \Closure::bind($v, new \ArrayObject($validators));
         }
 
+        foreach ($replacers as $i => $v) {
+            $replacers[$i] = \Closure::bind($v, $validator);
+        }
+
         if (in_array($rule, $implicitRules) && isset($validators[$rule])) {
             $validator->addImplicitExtension($rule, $validators[$rule]);
         } elseif (in_array($rule, $dependentRules) && isset($validators[$rule])) {
