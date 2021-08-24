@@ -530,20 +530,27 @@ class Service
 
         $ruleLists = [$key => $this->getAvailableRuleList($key)];
         $data = $this->getAvailableData($key);
+        $hasError = false;
 
         if ($this->getAllRuleLists()->offsetExists($key.'.*')) {
             $ruleLists[$key.'.*'] = $this->getAvailableRuleList($key.'.*');
         }
 
-        foreach ($ruleLists as $k => $ruleList) {
-            $errors = $this->getValidationErrors($k, $data->getArrayCopy(), $ruleList, $this->names->getArrayCopy());
+        foreach ($ruleLists as $ruleKey => $ruleList) {
+            $errors = $this->getValidationErrors($ruleKey, $data->getArrayCopy(), $ruleList, $this->names->getArrayCopy());
 
-            if (!empty($errors)) {
-                $this->errors->offsetSet($k, $errors);
+            if (!empty($errors->messages())) {
+                $this->validated->offsetSet($ruleKey, false);
+                // loop for wildcard rule key case
+                foreach ($errors->messages() as $messageList) {
+                    $errors = $this->errors->offsetExists($ruleKey) ? $this->errors->offsetGet($ruleKey) : [];
+                    $this->errors->offsetSet($ruleKey, array_merge($errors, $messageList));
+                }
+                $hasError = true;
             }
         }
 
-        if ($this->errors->offsetExists($key)) {
+        if ($hasError) {
             $this->validated->offsetSet($key, false);
 
             return false;

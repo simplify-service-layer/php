@@ -46,7 +46,7 @@ class ValidationProvider extends \Illuminate\Support\ServiceProvider
 
             $validator->passes();
 
-            return $validator->errors()->all();
+            return $validator->errors();
         });
     }
 
