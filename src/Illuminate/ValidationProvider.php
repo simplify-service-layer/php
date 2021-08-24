@@ -2,8 +2,10 @@
 
 namespace FunctionalCoding\Illuminate;
 
+use ArrayAccess;
 use FunctionalCoding\Service;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
 
 class ValidationProvider extends \Illuminate\Support\ServiceProvider
@@ -13,8 +15,25 @@ class ValidationProvider extends \Illuminate\Support\ServiceProvider
         Service::setResolverForGetValidationErrors(function ($key, $data = [], $ruleList = [], $names = []) {
             Validator::setFacadeApplication($this->app);
             $validator = Validator::make([], [], [], []);
+
+            if (preg_match('/\.\*$/', $key)) {
+                $arrayKey = preg_replace('/\.\*$/', '', $key);
+                $array = Arr::get($data, $arrayKey);
+                $rules = [];
+                if (!is_array($array) && !($array instanceof ArrayAccess)) {
+                    throw \Exception($arrayKey.' key must has array rule');
+                }
+                foreach ($array as $i => $v) {
+                    $rules[$arrayKey.'.'.$i] = array_keys($ruleList);
+                    $names[$arrayKey.'.'.$i] = str_replace('*', $i, $names[$key]);
+                }
+                unset($rules[$key], $names[$key]);
+            } else {
+                $rules = [$key => array_keys($ruleList)];
+            }
+
             $validator->setData($data);
-            $validator->setRules([$key => array_keys($ruleList)]);
+            $validator->setRules($rules);
             $validator->setCustomMessages([]);
             $validator->setAttributeNames($names);
             $locale = $this->app instanceof Application ? $this->app->getLocale() : 'en';
