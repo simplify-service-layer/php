@@ -535,11 +535,11 @@ class Service
             $ruleLists[$key.'.*'] = $this->getAvailableRuleList($key.'.*');
         }
 
-        foreach ($ruleLists as $key => $ruleList) {
-            $errors = $this->getValidationErrors($key, $data->getArrayCopy(), $ruleList, $this->names->getArrayCopy());
+        foreach ($ruleLists as $k => $ruleList) {
+            $errors = $this->getValidationErrors($k, $data->getArrayCopy(), $ruleList, $this->names->getArrayCopy());
 
             if (!empty($errors)) {
-                $this->errors->offsetSet($key, $errors);
+                $this->errors->offsetSet($k, $errors);
             }
         }
 
