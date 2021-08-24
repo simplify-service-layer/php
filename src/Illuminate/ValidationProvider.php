@@ -21,7 +21,7 @@ class ValidationProvider extends \Illuminate\Support\ServiceProvider
 
             foreach ($ruleList as $rule => $class) {
                 if (!preg_match('/^App/', $class)) {
-                    $this->extend($validator, $key, $rule, $locale, $class);
+                    $this->extend($validator, $rule, $locale, $class);
                 }
             }
 
@@ -31,7 +31,7 @@ class ValidationProvider extends \Illuminate\Support\ServiceProvider
         });
     }
 
-    protected function extend($validator, $key, $rule, $locale, $class)
+    protected function extend($validator, $rule, $locale, $class)
     {
         $rule = \explode(':', $rule)[0];
         $servicePath = (new \ReflectionClass($class))->getFileName();
