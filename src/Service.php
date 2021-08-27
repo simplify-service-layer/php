@@ -530,7 +530,6 @@ class Service
 
         $ruleLists = [$key => $this->getAvailableRuleList($key)];
         $data = $this->getAvailableData($key);
-        $hasError = false;
 
         if ($this->getAllRuleLists()->offsetExists($key.'.*')) {
             $ruleLists[$key.'.*'] = $this->getAvailableRuleList($key.'.*');
@@ -546,14 +545,11 @@ class Service
                     $errors = $this->errors->offsetExists($ruleKey) ? $this->errors->offsetGet($ruleKey) : [];
                     $this->errors->offsetSet($ruleKey, array_merge($errors, $messageList));
                 }
-                $hasError = true;
+
+                $this->validated->offsetSet($key, false);
+
+                return false;
             }
-        }
-
-        if ($hasError) {
-            $this->validated->offsetSet($key, false);
-
-            return false;
         }
 
         if ($this->validated->offsetExists($key) && false === $this->validated->offsetGet($key)) {
