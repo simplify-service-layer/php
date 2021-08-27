@@ -21,7 +21,7 @@ class ValidationProvider extends \Illuminate\Support\ServiceProvider
                 $array = Arr::get($data, $arrayKey);
                 $rules = [];
                 if (!is_array($array) && !($array instanceof ArrayAccess)) {
-                    throw \Exception($arrayKey.' key must has array rule');
+                    throw new \Exception($arrayKey.' key must has array rule');
                 }
                 foreach ($array as $i => $v) {
                     $rules[$arrayKey.'.'.$i] = array_keys($ruleList);
