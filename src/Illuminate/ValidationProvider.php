@@ -54,12 +54,12 @@ class ValidationProvider extends \Illuminate\Support\ServiceProvider
     {
         $rule = \explode(':', $rule)[0];
         $servicePath = (new \ReflectionClass($class))->getFileName();
-        $validationPath = \preg_replace('/\\\Service(|s)\\\.*$/', '', $servicePath).'\\Validation\\Illuminate\\';
+        $validationPath = \preg_replace('/'.'\\'.DIRECTORY_SEPARATOR.'Service(|s)'.'\\'.DIRECTORY_SEPARATOR.'.*$/', '', $servicePath).DIRECTORY_SEPARATOR.'Validation'.DIRECTORY_SEPARATOR.'Illuminate'.DIRECTORY_SEPARATOR;
         $validators = include $validationPath.'validators.php';
         $replacers = include $validationPath.'replacers.php';
         $implicitRules = include $validationPath.'implicitRules.php';
         $dependentRules = include $validationPath.'dependentRules.php';
-        $messages = include $validationPath.'lang\\'.$locale.'.php';
+        $messages = include $validationPath.'lang'.DIRECTORY_SEPARATOR.$locale.'.php';
 
         foreach ($validators as $i => $v) {
             $validators[$i] = \Closure::bind($v, new \ArrayObject($validators));
