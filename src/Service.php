@@ -104,7 +104,7 @@ class Service
             foreach ($class::getArrRuleLists() as $key => $ruleList) {
                 foreach ($ruleList as $rule) {
                     if (isset($arr[$key][$rule])) {
-                        throw new \Exception('duplicated rule exist in same key.');
+                        throw new \Exception('duplicated rule exist in same key in '.static::class);
                     }
 
                     $arr[$key][$rule] = $class;
@@ -375,7 +375,7 @@ class Service
                 }
 
                 if (!$this->isRequiredRule($rule) && !$this->data()->offsetExists($bindKey)) {
-                    throw new \Exception('"'.$bindKey.'" key required rule not exists');
+                    throw new \Exception('"'.$bindKey.'" key required rule not exists in '.static::class);
                 }
             }
 
@@ -476,7 +476,7 @@ class Service
             $bindName = $bindNames->offsetExists($key) ? $bindNames->offsetGet($key) : null;
 
             if (null == $bindName) {
-                throw new \Exception('"'.$key.'" name not exists');
+                throw new \Exception('"'.$key.'" name not exists in '.static::class);
             }
 
             $replace = $this->resolveBindName($bindName);
@@ -494,7 +494,7 @@ class Service
     protected function validate($key)
     {
         if (count(explode('.', $key)) > 1) {
-            throw new \Exception('does not support validation with child key');
+            throw new \Exception('does not support validation with child key in '.static::class);
         }
 
         if ($this->validated->offsetExists($key)) {
