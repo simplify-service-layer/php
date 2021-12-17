@@ -13,7 +13,7 @@ class ValidationProvider extends \Illuminate\Support\ServiceProvider
 {
     public function register()
     {
-        Service::setResolverForGetValidationErrors(function ($key, $data = [], $ruleList = [], $names = []) {
+        Service::setValidationErrorListResolver(function ($key, $data = [], $ruleList = [], $names = []) {
             Validator::setFacadeApplication($this->app);
             $validator = Validator::make([], [], [], []);
             $data = (new Collection($data))->toArray();

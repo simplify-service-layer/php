@@ -10,7 +10,7 @@ class Service
 {
     public const BIND_NAME_EXP = '/\{\{([a-z0-9\_\.\*]+)\}\}/';
 
-    protected static Closure $resolverForGetValidationErrors;
+    protected static Closure $validationErrorListResolver;
     protected ArrayObject $childs;
     protected ArrayObject $data;
     protected ArrayObject $errors;
@@ -190,9 +190,9 @@ class Service
         return is_array($value) && array_key_exists(0, $value) && is_string($value[0]) && is_a($value[0], Service::class, true);
     }
 
-    public function getValidationErrors($key, $data, $ruleLists, $names)
+    public function getValidationErrorList($key, $data, $ruleLists, $names)
     {
-        return call_user_func_array(static::$resolverForGetValidationErrors, [$key, $data, $ruleLists, $names]);
+        return call_user_func_array(static::$validationErrorListResolver, [$key, $data, $ruleLists, $names]);
     }
 
     public function run()
@@ -239,9 +239,9 @@ class Service
         }
     }
 
-    public static function setResolverForGetValidationErrors(Closure $resolver)
+    public static function setValidationErrorListResolver(Closure $resolver)
     {
-        static::$resolverForGetValidationErrors = $resolver;
+        static::$validationErrorListResolver = $resolver;
     }
 
     public function totalErrors()
@@ -547,7 +547,7 @@ class Service
         $data = $this->getAvailableData($key);
 
         foreach ($ruleLists as $ruleKey => $ruleList) {
-            $errors = $this->getValidationErrors($ruleKey, $data->getArrayCopy(), $ruleList, $this->names->getArrayCopy());
+            $errors = $this->getValidationErrorList($ruleKey, $data->getArrayCopy(), $ruleList, $this->names->getArrayCopy());
 
             if (!empty($errors->messages())) {
                 $this->validated->offsetSet($ruleKey, false);
