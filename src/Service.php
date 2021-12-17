@@ -34,12 +34,12 @@ class Service
         }
     }
 
-    public function childs()
+    public function getChilds()
     {
         return $this->childs;
     }
 
-    public function data()
+    public function getData()
     {
         $data = clone $this->data;
 
@@ -48,7 +48,7 @@ class Service
         return $data;
     }
 
-    public function errors()
+    public function getErrors()
     {
         return clone $this->errors;
     }
@@ -213,7 +213,7 @@ class Service
             $this->processed = true;
         }
 
-        if (empty($this->totalErrors()) && !$this->data()->offsetExists('result')) {
+        if (empty($this->totalErrors()) && !$this->getData()->offsetExists('result')) {
             throw new \Exception('result data key is not exists in '.static::class);
         }
 
@@ -221,7 +221,7 @@ class Service
             return $this->resolveError();
         }
 
-        return $this->data()->offsetGet('result');
+        return $this->getData()->offsetGet('result');
     }
 
     public function runAfterCommitCallbacks()
@@ -246,14 +246,14 @@ class Service
 
     public function totalErrors()
     {
-        $arr = $this->errors()->getArrayCopy();
+        $arr = $this->getErrors()->getArrayCopy();
         $errors = [];
 
         array_walk_recursive($arr, function ($value) use (&$errors) {
             $errors[] = $value;
         });
 
-        foreach ($this->childs() as $child) {
+        foreach ($this->getChilds() as $child) {
             $errors = array_merge($errors, $child->totalErrors());
         }
 
@@ -284,7 +284,7 @@ class Service
     protected function getAvailableData($key)
     {
         $key = explode('.', $key)[0];
-        $data = $this->data();
+        $data = $this->getData();
         $loader = $this->getAllLoaders()->offsetExists($key) ? $this->getAllLoaders()->offsetGet($key) : null;
 
         if ($data->offsetExists($key)) {
@@ -382,7 +382,7 @@ class Service
                         continue;
                     }
 
-                    if (!$this->isRequiredRule($rule) && !$this->data()->offsetExists($bindKey)) {
+                    if (!$this->isRequiredRule($rule) && !$this->getData()->offsetExists($bindKey)) {
                         throw new \Exception('"'.$bindKey.'" key required rule not exists in '.static::class);
                     }
                 }

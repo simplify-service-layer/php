@@ -40,7 +40,7 @@ class ServiceTest extends TestCase
 
         $service->run();
 
-        $this->assertEquals($service->errors()->all(), []);
+        $this->assertEquals($service->getErrors()->all(), []);
 
         $service = new class() extends Service {
             public static function getArrBindNames()
@@ -69,7 +69,7 @@ class ServiceTest extends TestCase
 
         $service->run();
 
-        $this->assertNotEquals($service->errors()->all(), []);
+        $this->assertNotEquals($service->getErrors()->all(), []);
     }
 
     public function testWhenInputValueIsNotEmpty()
@@ -97,7 +97,7 @@ class ServiceTest extends TestCase
 
         $service->run();
 
-        $this->assertEquals($service->errors()->all(), []);
+        $this->assertEquals($service->getErrors()->all(), []);
     }
 
     public function testWhenBindNameValueIsNotEmpty()
@@ -123,7 +123,7 @@ class ServiceTest extends TestCase
 
         $service->run();
 
-        $this->assertEquals($service->errors()->all(), []);
+        $this->assertEquals($service->getErrors()->all(), []);
     }
 
     public function testWhenInputValueIsServiceInitable()
@@ -163,7 +163,7 @@ class ServiceTest extends TestCase
         $value = $service->run();
 
         $this->assertEquals($value, 'child result value');
-        $this->assertEquals($service->errors()->all(), []);
+        $this->assertEquals($service->getErrors()->all(), []);
     }
 
     public function testWhenInputValueIsBatchService()
@@ -206,6 +206,6 @@ class ServiceTest extends TestCase
             'child result value',
             'child result value',
         ]);
-        $this->assertEquals($service->errors()->all(), []);
+        $this->assertEquals($service->getErrors()->all(), []);
     }
 }
