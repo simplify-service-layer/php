@@ -535,7 +535,7 @@ class Service
 
             if (!empty($errors->messages())) {
                 $this->validated->offsetSet($ruleKey, false);
-                // loop for wildcard rule key case
+
                 foreach ($errors->messages() as $messageList) {
                     $errors = $this->errors->offsetExists($ruleKey) ? $this->errors->offsetGet($ruleKey) : [];
                     $this->errors->offsetSet($ruleKey, array_merge($errors, $messageList));
