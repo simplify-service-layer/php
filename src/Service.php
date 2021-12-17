@@ -521,7 +521,9 @@ class Service
             $promiseKey = $segs[0];
             $isStrict = isset($segs[1]) && 'strict' == $segs[1];
 
-            if (!$this->validate($promiseKey) && $isStrict) {
+            // isStrict mode is deprecated
+            // if (!$this->validate($promiseKey) && $isStrict) {
+            if (!$this->validate($promiseKey)) {
                 $this->validated->offsetSet($key, false);
 
                 return false;
