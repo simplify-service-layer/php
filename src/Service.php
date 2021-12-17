@@ -423,14 +423,28 @@ class Service
         return $deps;
     }
 
-    protected function getPromiseOrderedDependencies($keys)
+    protected function getOrderedCallbackKeys($key)
+    {
+        $promiseKeys = array_filter(array_keys($this->getAllPromiseLists()->getArrayCopy()), function ($value) use ($key) {
+            return preg_match('/^'.$key.'\\./', $value);
+        });
+        $allKeys = array_filter(array_keys($this->getAllCallbacks()->getArrayCopy()), function ($value) use ($key) {
+            return preg_match('/^'.$key.'\\./', $value);
+        });
+        $orderedKeys = $this->getShouldOrderedCallbackKeys($promiseKeys);
+        $restKeys = array_diff($allKeys, $orderedKeys);
+
+        return array_merge($orderedKeys, $restKeys);
+    }
+
+    protected function getShouldOrderedCallbackKeys($keys)
     {
         $arr = [];
         $rtn = [];
 
         foreach ($keys as $key) {
             $deps = $this->getAllPromiseLists()->offsetExists($key) ? $this->getAllPromiseLists()->offsetGet($key) : [];
-            $list = $this->getPromiseOrderedDependencies($deps);
+            $list = $this->getShouldOrderedCallbackKeys($deps);
             $list = array_merge($list, [$key]);
             $arr = array_merge($list, $arr);
         }
@@ -557,17 +571,9 @@ class Service
 
         $this->validated->offsetSet($key, true);
 
-        $promiseKeys = array_filter(array_keys($this->getAllPromiseLists()->getArrayCopy()), function ($value) use ($key) {
-            return preg_match('/^'.$key.'\\./', $value);
-        });
-        $callbackKeys = array_filter(array_keys($this->getAllCallbacks()->getArrayCopy()), function ($value) use ($key) {
-            return preg_match('/^'.$key.'\\./', $value);
-        });
-        $orderedKeys = $this->getPromiseOrderedDependencies($promiseKeys);
-        $restKeys = array_diff($callbackKeys, $orderedKeys);
-        $callbackKeys = array_merge($orderedKeys, $restKeys);
+        $orderedCallbackKeys = $this->getOrderedCallbackKeys($key);
 
-        foreach ($callbackKeys as $callbackKey) {
+        foreach ($orderedCallbackKeys as $callbackKey) {
             $callback = $this->getAllCallbacks()->offsetGet($callbackKey);
             $deps = $this->getClosureDependencies($callback);
 
