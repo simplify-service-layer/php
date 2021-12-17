@@ -14,14 +14,14 @@ class ServiceTest extends TestCase
     public function testWhenBasicCase()
     {
         $service = new class() extends Service {
-            public static function getArrBindNames()
+            public static function getBindNames()
             {
                 return [
                     'result' => 'name for result',
                 ];
             }
 
-            public static function getArrLoaders()
+            public static function getLoaders()
             {
                 return [
                     'result' => function () {
@@ -30,7 +30,7 @@ class ServiceTest extends TestCase
                 ];
             }
 
-            public static function getArrRuleLists()
+            public static function getRuleLists()
             {
                 return [
                     'result' => ['required', 'string'],
@@ -43,14 +43,14 @@ class ServiceTest extends TestCase
         $this->assertEquals($service->getErrors()->all(), []);
 
         $service = new class() extends Service {
-            public static function getArrBindNames()
+            public static function getBindNames()
             {
                 return [
                     'result' => 'name for result',
                 ];
             }
 
-            public static function getArrLoaders()
+            public static function getLoaders()
             {
                 return [
                     'result' => function () {
@@ -59,7 +59,7 @@ class ServiceTest extends TestCase
                 ];
             }
 
-            public static function getArrRuleLists()
+            public static function getRuleLists()
             {
                 return [
                     'result' => ['required', 'string'],
@@ -75,19 +75,19 @@ class ServiceTest extends TestCase
     public function testWhenInputValueIsNotEmpty()
     {
         $service = new class(['result' => 'result value']) extends Service {
-            public static function getArrBindNames()
+            public static function getBindNames()
             {
                 return [
                     'result' => 'name for key1',
                 ];
             }
 
-            public static function getArrLoaders()
+            public static function getLoaders()
             {
                 return [];
             }
 
-            public static function getArrRuleLists()
+            public static function getRuleLists()
             {
                 return [
                     'result' => ['required'],
@@ -103,17 +103,17 @@ class ServiceTest extends TestCase
     public function testWhenBindNameValueIsNotEmpty()
     {
         $service = new class(['result' => 'result value'], ['result' => 'result name']) extends Service {
-            public static function getArrBindNames()
+            public static function getBindNames()
             {
                 return [];
             }
 
-            public static function getArrLoaders()
+            public static function getLoaders()
             {
                 return [];
             }
 
-            public static function getArrRuleLists()
+            public static function getRuleLists()
             {
                 return [
                     'result' => ['required'],
@@ -129,7 +129,7 @@ class ServiceTest extends TestCase
     public function testWhenInputValueIsServiceInitable()
     {
         $service = new class() extends Service {
-            public static function getArrLoaders()
+            public static function getLoaders()
             {
                 return [
                     'result' => function () {
@@ -140,19 +140,19 @@ class ServiceTest extends TestCase
         };
 
         $service = new class(['result' => [get_class($service)]], []) extends Service {
-            public static function getArrBindNames()
+            public static function getBindNames()
             {
                 return [
                     'result' => 'parent result name',
                 ];
             }
 
-            public static function getArrLoaders()
+            public static function getLoaders()
             {
                 return [];
             }
 
-            public static function getArrRuleLists()
+            public static function getRuleLists()
             {
                 return [
                     'result' => ['required'],
@@ -169,7 +169,7 @@ class ServiceTest extends TestCase
     public function testWhenInputValueIsBatchService()
     {
         $service = new class() extends Service {
-            public static function getArrLoaders()
+            public static function getLoaders()
             {
                 return [
                     'result' => function () {
@@ -180,19 +180,19 @@ class ServiceTest extends TestCase
         };
 
         $service = new class(['result' => [[get_class($service)], [get_class($service)]]], []) extends Service {
-            public static function getArrBindNames()
+            public static function getBindNames()
             {
                 return [
                     'result' => 'parent result name',
                 ];
             }
 
-            public static function getArrLoaders()
+            public static function getLoaders()
             {
                 return [];
             }
 
-            public static function getArrRuleLists()
+            public static function getRuleLists()
             {
                 return [
                     'result' => ['required'],

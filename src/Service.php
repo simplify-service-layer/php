@@ -58,7 +58,7 @@ class Service
         $arr = [];
 
         foreach ([...static::getAllTraits(), static::class] as $class) {
-            $arr = array_merge($arr, $class::getArrBindNames());
+            $arr = array_merge($arr, $class::getBindNames());
         }
 
         return new ArrayObject($arr);
@@ -69,7 +69,7 @@ class Service
         $arr = [];
 
         foreach ([...static::getAllTraits(), static::class] as $class) {
-            $arr = array_merge($arr, $class::getArrCallbacks());
+            $arr = array_merge($arr, $class::getCallbacks());
         }
 
         return new ArrayObject($arr);
@@ -80,7 +80,7 @@ class Service
         $arr = [];
 
         foreach ([...static::getAllTraits(), static::class] as $class) {
-            $arr = array_merge($arr, $class::getArrLoaders());
+            $arr = array_merge($arr, $class::getLoaders());
         }
 
         return new ArrayObject($arr);
@@ -91,7 +91,7 @@ class Service
         $arr = [];
 
         foreach ([...static::getAllTraits(), static::class] as $class) {
-            $arr = array_merge_recursive($arr, $class::getArrPromiseLists());
+            $arr = array_merge_recursive($arr, $class::getPromiseLists());
         }
 
         return new ArrayObject($arr);
@@ -102,7 +102,7 @@ class Service
         $arr = [];
 
         foreach ([...static::getAllTraits(), static::class] as $class) {
-            foreach ($class::getArrRuleLists() as $key => $ruleList) {
+            foreach ($class::getRuleLists() as $key => $ruleList) {
                 foreach ($ruleList as $rule) {
                     if (isset($arr[$key][$rule])) {
                         throw new \Exception('duplicated rule exist in same key in '.static::class);
@@ -120,42 +120,42 @@ class Service
     {
         $arr = [];
 
-        foreach (static::getArrTraits() as $class) {
+        foreach (static::getTraits() as $class) {
             $arr = array_merge($arr, $class::getAllTraits()->getArrayCopy());
         }
 
-        $arr = array_merge($arr, static::getArrTraits());
+        $arr = array_merge($arr, static::getTraits());
         $arr = array_unique($arr);
 
         return new ArrayObject($arr);
     }
 
-    public static function getArrBindNames()
+    public static function getBindNames()
     {
         return [];
     }
 
-    public static function getArrCallbacks()
+    public static function getCallbacks()
     {
         return [];
     }
 
-    public static function getArrLoaders()
+    public static function getLoaders()
     {
         return [];
     }
 
-    public static function getArrPromiseLists()
+    public static function getPromiseLists()
     {
         return [];
     }
 
-    public static function getArrRuleLists()
+    public static function getRuleLists()
     {
         return [];
     }
 
-    public static function getArrTraits()
+    public static function getTraits()
     {
         return [];
     }
