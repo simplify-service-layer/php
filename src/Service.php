@@ -9,15 +9,15 @@ use Illuminate\Support\Str;
 class Service
 {
     public const BIND_NAME_EXP = '/\{\{([a-z0-9\_\.\*]+)\}\}/';
-
-    protected static Closure $validationErrorListResolver;
     protected ArrayObject $childs;
     protected ArrayObject $data;
     protected ArrayObject $errors;
     protected ArrayObject $inputs;
     protected ArrayObject $names;
-    protected ArrayObject $validated;
     protected bool $processed;
+    protected ArrayObject $validated;
+
+    protected static Closure $validationErrorListResolver;
 
     public function __construct(array $inputs = [], array $names = [])
     {
@@ -32,25 +32,6 @@ class Service
         foreach ($this->inputs as $key => $value) {
             $this->validate($key);
         }
-    }
-
-    public function getChilds()
-    {
-        return $this->childs;
-    }
-
-    public function getData()
-    {
-        $data = clone $this->data;
-
-        $data->ksort();
-
-        return $data;
-    }
-
-    public function getErrors()
-    {
-        return clone $this->errors;
     }
 
     public static function getAllBindNames()
@@ -140,6 +121,25 @@ class Service
         return [];
     }
 
+    public function getChilds()
+    {
+        return $this->childs;
+    }
+
+    public function getData()
+    {
+        $data = clone $this->data;
+
+        $data->ksort();
+
+        return $data;
+    }
+
+    public function getErrors()
+    {
+        return clone $this->errors;
+    }
+
     public static function getLoaders()
     {
         return [];
@@ -158,6 +158,11 @@ class Service
     public static function getTraits()
     {
         return [];
+    }
+
+    public function getValidationErrorList($key, $data, $ruleLists, $names)
+    {
+        return call_user_func_array(static::$validationErrorListResolver, [$key, $data, $ruleLists, $names]);
     }
 
     public static function initService($value)
@@ -188,11 +193,6 @@ class Service
     public static function isInitable($value)
     {
         return is_array($value) && array_key_exists(0, $value) && is_string($value[0]) && is_a($value[0], Service::class, true);
-    }
-
-    public function getValidationErrorList($key, $data, $ruleLists, $names)
-    {
-        return call_user_func_array(static::$validationErrorListResolver, [$key, $data, $ruleLists, $names]);
     }
 
     public function run()
@@ -267,18 +267,6 @@ class Service
         ksort($arr);
 
         return new ArrayObject($arr);
-    }
-
-    protected function isRequiredRule($rule)
-    {
-        return preg_match('/^required/', $rule);
-    }
-
-    protected function isResolveError($value)
-    {
-        $errorClass = get_class($this->resolveError());
-
-        return is_object($value) && $value instanceof $errorClass;
     }
 
     protected function getAvailableData($key)
@@ -454,6 +442,18 @@ class Service
         }
 
         return array_keys($rtn);
+    }
+
+    protected function isRequiredRule($rule)
+    {
+        return preg_match('/^required/', $rule);
+    }
+
+    protected function isResolveError($value)
+    {
+        $errorClass = get_class($this->resolveError());
+
+        return is_object($value) && $value instanceof $errorClass;
     }
 
     protected function resolve($func)
