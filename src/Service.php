@@ -15,9 +15,8 @@ class Service
     protected ArrayObject $inputs;
     protected ArrayObject $names;
     protected bool $processed;
-    protected ArrayObject $validates;
-
     protected static Closure $validationErrorListResolver;
+    protected ArrayObject $validations;
 
     public function __construct(array $inputs = [], array $names = [])
     {
@@ -26,7 +25,7 @@ class Service
         $this->errors = new ArrayObject();
         $this->inputs = new ArrayObject($inputs);
         $this->names = new ArrayObject($names);
-        $this->validates = new ArrayObject();
+        $this->validations = new ArrayObject();
         $this->processed = false;
 
         foreach ($this->inputs as $key => $value) {
@@ -178,7 +177,7 @@ class Service
 
     public function getValidates()
     {
-        $arr = $this->validates->getArrayCopy();
+        $arr = $this->validations->getArrayCopy();
 
         ksort($arr);
 
@@ -323,7 +322,7 @@ class Service
                 unset($values[$i]);
                 $hasError = true;
 
-                $this->validates->offsetSet($key, false);
+                $this->validations->offsetSet($key, false);
             }
         }
 
@@ -363,7 +362,7 @@ class Service
                     $this->names->offsetSet($bindKey, $this->resolveBindName('{{'.$bindKey.'}}'));
 
                     if (!$this->validate($bindKey)) {
-                        $this->validates->offsetSet($mainKey, false);
+                        $this->validations->offsetSet($mainKey, false);
 
                         unset($ruleList[$rule]);
 
@@ -510,8 +509,8 @@ class Service
             throw new \Exception('does not support validation with child key in '.static::class);
         }
 
-        if ($this->validates->offsetExists($key)) {
-            return $this->validates->offsetGet($key);
+        if ($this->validations->offsetExists($key)) {
+            return $this->validations->offsetGet($key);
         }
 
         $promiseList = $this->getAllPromiseLists()->offsetExists($key) ? $this->getAllPromiseLists()->offsetGet($key) : [];
@@ -524,7 +523,7 @@ class Service
             // isStrict mode is deprecated
             // if (!$this->validate($promiseKey) && $isStrict) {
             if (!$this->validate($promiseKey)) {
-                $this->validates->offsetSet($key, false);
+                $this->validations->offsetSet($key, false);
 
                 return false;
             }
@@ -535,11 +534,11 @@ class Service
 
         foreach ($deps as $dep) {
             if (!$this->validate($dep)) {
-                $this->validates->offsetSet($key, false);
+                $this->validations->offsetSet($key, false);
             }
         }
 
-        if ($this->validates->offsetExists($key) && false === $this->validates->offsetGet($key)) {
+        if ($this->validations->offsetExists($key) && false === $this->validations->offsetGet($key)) {
             return false;
         }
 
@@ -550,20 +549,20 @@ class Service
             $errors = $this->getValidationErrorList($ruleKey, $data->getArrayCopy(), $ruleList, $this->names->getArrayCopy());
 
             if (!empty($errors->messages())) {
-                $this->validates->offsetSet($ruleKey, false);
+                $this->validations->offsetSet($ruleKey, false);
 
                 foreach ($errors->messages() as $messageList) {
                     $errors = $this->errors->offsetExists($ruleKey) ? $this->errors->offsetGet($ruleKey) : [];
                     $this->errors->offsetSet($ruleKey, array_merge($errors, $messageList));
                 }
 
-                $this->validates->offsetSet($key, false);
+                $this->validations->offsetSet($key, false);
 
                 return false;
             }
         }
 
-        if ($this->validates->offsetExists($key) && false === $this->validates->offsetGet($key)) {
+        if ($this->validations->offsetExists($key) && false === $this->validations->offsetGet($key)) {
             return false;
         }
 
@@ -571,7 +570,7 @@ class Service
             $this->data->offsetSet($key, $data->offsetGet($key));
         }
 
-        $this->validates->offsetSet($key, true);
+        $this->validations->offsetSet($key, true);
 
         $orderedCallbackKeys = $this->getOrderedCallbackKeys($key);
 
@@ -581,7 +580,7 @@ class Service
 
             foreach ($deps as $dep) {
                 if (!$this->validate($dep)) {
-                    $this->validates->offsetSet($key, false);
+                    $this->validations->offsetSet($key, false);
                 }
             }
 
@@ -590,7 +589,7 @@ class Service
             }
         }
 
-        if (false === $this->validates->offsetGet($key)) {
+        if (false === $this->validations->offsetGet($key)) {
             return false;
         }
 
