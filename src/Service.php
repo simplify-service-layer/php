@@ -155,6 +155,22 @@ class Service
         return [];
     }
 
+    public function getTotalErrors()
+    {
+        $arr = $this->getErrors()->getArrayCopy();
+        $errors = [];
+
+        array_walk_recursive($arr, function ($value) use (&$errors) {
+            $errors[] = $value;
+        });
+
+        foreach ($this->getChilds() as $child) {
+            $errors = array_merge($errors, $child->getTotalErrors());
+        }
+
+        return $errors;
+    }
+
     public static function getTraits()
     {
         return [];
@@ -222,11 +238,11 @@ class Service
             $this->processed = true;
         }
 
-        if (empty($this->totalErrors()) && !$this->getData()->offsetExists('result')) {
+        if (empty($this->getTotalErrors()) && !$this->getData()->offsetExists('result')) {
             throw new \Exception('result data key is not exists in '.static::class);
         }
 
-        if (!empty($this->totalErrors())) {
+        if (!empty($this->getTotalErrors())) {
             return $this->resolveError();
         }
 
@@ -251,22 +267,6 @@ class Service
     public static function setValidationErrorListResolver(Closure $resolver)
     {
         static::$validationErrorListResolver = $resolver;
-    }
-
-    public function totalErrors()
-    {
-        $arr = $this->getErrors()->getArrayCopy();
-        $errors = [];
-
-        array_walk_recursive($arr, function ($value) use (&$errors) {
-            $errors[] = $value;
-        });
-
-        foreach ($this->getChilds() as $child) {
-            $errors = array_merge($errors, $child->totalErrors());
-        }
-
-        return $errors;
     }
 
     protected function getAvailableData($key)
