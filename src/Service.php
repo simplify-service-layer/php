@@ -160,6 +160,15 @@ class Service
         return [];
     }
 
+    public function getValidates()
+    {
+        $arr = $this->validated->getArrayCopy();
+
+        ksort($arr);
+
+        return new ArrayObject($arr);
+    }
+
     public function getValidationErrorList($key, $data, $ruleLists, $names)
     {
         return call_user_func_array(static::$validationErrorListResolver, [$key, $data, $ruleLists, $names]);
@@ -258,15 +267,6 @@ class Service
         }
 
         return $errors;
-    }
-
-    public function validated()
-    {
-        $arr = $this->validated->getArrayCopy();
-
-        ksort($arr);
-
-        return new ArrayObject($arr);
     }
 
     protected function getAvailableData($key)
