@@ -348,6 +348,7 @@ class Service
 
         if (!empty($ruleLists[$key])) {
             if ($this->getAllRuleLists()->offsetExists($key.'.*')) {
+                $this->names->offsetSet($key.'.*', $this->resolveBindName('{{'.$key.'.*'.'}}'));
                 $ruleLists[$key.'.*'] = $this->getAllRuleLists()->offsetGet($key.'.*');
             }
 
