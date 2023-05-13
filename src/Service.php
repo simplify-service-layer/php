@@ -331,7 +331,7 @@ abstract class Service
         return $data;
     }
 
-    protected function getAvailableRuleList($key)
+    protected function getAvailableRuleList($key, $data)
     {
         $ruleLists = [
             $key => $this->getAllRuleLists()->offsetExists($key) ? $this->getAllRuleLists()->offsetGet($key) : [],
@@ -346,6 +346,19 @@ abstract class Service
             if ($this->getAllRuleLists()->offsetExists($key.'.*')) {
                 $this->names->offsetSet($key.'.*', $this->resolveBindName('{{'.$key.'.*'.'}}'));
                 $ruleLists[$key.'.*'] = $this->getAllRuleLists()->offsetGet($key.'.*');
+                $keyVal = $data[$key];
+                if (!is_array($keyVal) && !($keyVal instanceof \ArrayAccess)) {
+                    throw new \Exception($key.' key must has array rule');
+                }
+                foreach ($keyVal as $i => $v) {
+                    $rules[$key.'.'.$i] = $ruleLists[$key.'.*'];
+                    $this->names->offsetSet(
+                        $key.'.'.$i,
+                        str_replace('*', $i, $this->names->offsetGet($key.'.*'))
+                    );
+                }
+                unset($ruleLists[$key.'.*']);
+                $this->names->offsetUnset($key.'.*');
             }
 
             $this->names->offsetSet($key, $this->resolveBindName('{{'.$key.'}}'));
@@ -557,12 +570,18 @@ abstract class Service
             return false;
         }
 
-        $ruleLists = $this->getAvailableRuleList($key);
         $data = $this->getAvailableData($key);
+        $ruleLists = $this->getAvailableRuleList($key, $data);
 
         foreach ($ruleLists as $ruleKey => $ruleList) {
             $locale = $this->getLocale();
-            $errors = $this->getValidationErrors($locale, $ruleKey, $data->getArrayCopy(), $ruleList, $this->names->getArrayCopy());
+            $errors = $this->getValidationErrors(
+                $locale,
+                $ruleKey,
+                $data->getArrayCopy(),
+                $ruleList,
+                $this->names->getArrayCopy()
+            );
 
             if (!empty($errors->messages())) {
                 $this->validations->offsetSet($ruleKey, false);
