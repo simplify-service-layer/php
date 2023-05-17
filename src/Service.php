@@ -16,6 +16,7 @@ abstract class Service
     protected bool $processed;
     protected ArrayObject $validations;
     private static Closure $localeResolver;
+    private static Closure $validationErrorListResolver;
 
     public function __construct(array $inputs = [], array $names = [])
     {
@@ -469,7 +470,14 @@ abstract class Service
         return array_keys($rtn);
     }
 
-    abstract protected function getValidationErrors($locale, $key, $data, $ruleLists, $names);
+    protected function getValidationErrors($locale, $key, $data, $ruleList, $names)
+    {
+        if (empty(static::$validationErrorListResolver)) {
+            throw new \Exception('you must be implement validationErrorListResolver resolver using Service::setValidationErrorListResolver');
+        }
+
+        return static::$validationErrorListResolver($locale, $key, $data, $ruleList, $names);
+    }
 
     protected function isRequiredRule($rule)
     {
