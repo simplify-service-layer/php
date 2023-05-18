@@ -1,24 +1,24 @@
 {
-    "name": "functional-coding/php",
-    "version": "2.2.0",
+    "name": "functional-coding/service",
+    "license": "MIT",
     "authors": [
         {
             "email": "dbwhddn10@gmail.com",
             "name": "jongwoo Yoo"
         }
     ],
-    "require": {
-        "php": ">=7.4"
-    },
-    "require-dev": {
-        "friendsofphp/php-cs-fixer": "^3.0",
-        "phpunit/phpunit": "^9.5"
-    },
     "autoload": {
         "psr-4": {
             "FunctionalCoding\\": "src/",
             "FunctionalCoding\\Tests\\": "tests/"
         }
     },
-    "license": "MIT"
+    "require": {
+        "php": ">=7.4",
+        "illuminate/validation": "^8.83"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.0",
+        "phpunit/phpunit": "^9.5"
+    }
 }

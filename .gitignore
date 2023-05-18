@@ -8,4 +8,4 @@ Thumbs.db
 /.vscode
 
 # php-cs-fixer
-/.php-cs-fixer.cache
+*.cache

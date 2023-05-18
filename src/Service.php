@@ -4,6 +4,7 @@ namespace FunctionalCoding;
 
 use ArrayObject;
 use Closure;
+use FunctionalCoding\Validation\Validator;
 
 abstract class Service
 {
@@ -84,11 +85,13 @@ abstract class Service
         foreach ([...static::getAllTraits(), static::class] as $class) {
             foreach ($class::getRuleLists() as $key => $ruleList) {
                 foreach ($ruleList as $rule) {
-                    if (isset($arr[$key][$rule])) {
+                    if (!array_key_exists($key, $arr)) {
+                        $arr[$key] = [];
+                    }
+                    if (in_array($rule, $arr[$key])) {
                         throw new \Exception('duplicated rule exist in same key in '.static::class);
                     }
-
-                    $arr[$key][$rule] = $class;
+                    array_push($arr[$key], $rule);
                 }
             }
         }
@@ -231,7 +234,6 @@ abstract class Service
 
             $this->processed = true;
         }
-
         if (empty($this->getTotalErrors()) && !$this->getData()->offsetExists('result')) {
             throw new \Exception('result data key is not exists in '.static::class);
         }
@@ -348,7 +350,7 @@ abstract class Service
                 $this->names->offsetSet($key.'.*', $this->resolveBindName('{{'.$key.'.*'.'}}'));
                 $ruleLists[$key.'.*'] = $this->getAllRuleLists()->offsetGet($key.'.*');
                 $keyVal = $data[$key];
-                if (!is_array($keyVal) && !($keyVal instanceof \ArrayAccess)) {
+                if (!is_array($keyVal) && !($keyVal instanceof \ArrayAccess) && !in_array('array', $ruleLists[$key])) {
                     throw new \Exception($key.' key must has array rule');
                 }
                 foreach ($keyVal as $i => $v) {
@@ -366,7 +368,7 @@ abstract class Service
         }
 
         foreach ($ruleLists as $k => $ruleList) {
-            foreach ($ruleList as $rule => $class) {
+            foreach ($ruleList as $i => $rule) {
                 $bindKeys = $this->getBindKeys($rule);
 
                 foreach ($bindKeys as $bindKey) {
@@ -374,7 +376,7 @@ abstract class Service
 
                     if (!$this->validate($bindKey)) {
                         $this->validations->offsetSet($key, false);
-                        unset($ruleList[$rule]);
+                        unset($ruleList[$i]);
 
                         continue;
                     }
@@ -384,10 +386,7 @@ abstract class Service
                     }
                 }
 
-                if (array_key_exists($rule, $ruleList)) {
-                    unset($ruleList[$rule]);
-                    $ruleList[preg_replace(static::BIND_NAME_EXP, '$1', $rule)] = $class;
-                }
+                $ruleList[$i] = preg_replace(static::BIND_NAME_EXP, '$1', $rule);
             }
             $ruleLists[$k] = $ruleList;
         }
@@ -430,11 +429,11 @@ abstract class Service
 
     protected function getLocale()
     {
-        if (empty(static::$localeResolver)) {
-            throw new \Exception('you must be implement locale resolver using Service::setLocaleResolver');
+        if (!empty(static::$localeResolver)) {
+            return static::$localeResolver();
         }
 
-        return static::$localeResolver();
+        return 'en';
     }
 
     protected function getOrderedCallbackKeys($key)
@@ -470,13 +469,16 @@ abstract class Service
         return array_keys($rtn);
     }
 
-    protected function getValidationErrors($locale, $key, $data, $ruleList, $names)
+    protected function getValidationErrors($locale, $data, $ruleLists, $names)
     {
-        if (empty(static::$validationErrorListResolver)) {
-            throw new \Exception('you must be implement validationErrorListResolver resolver using Service::setValidationErrorListResolver');
+        if (!empty(static::$validationErrorListResolver)) {
+            return static::$validationErrorListResolver($locale, $data, $ruleLists, $names);
         }
 
-        return static::$validationErrorListResolver($locale, $key, $data, $ruleList, $names);
+        $validator = Validator::newInstance($locale, $data, $ruleLists, $names);
+        $validator->passes();
+
+        return $validator->errors()->messages();
     }
 
     protected function isRequiredRule($rule)
@@ -585,20 +587,18 @@ abstract class Service
             $locale = $this->getLocale();
             $errors = $this->getValidationErrors(
                 $locale,
-                $ruleKey,
                 $data->getArrayCopy(),
-                $ruleList,
+                [$ruleKey => $ruleList],
                 $this->names->getArrayCopy()
             );
 
-            if (!empty($errors->messages())) {
+            if (!empty($errors)) {
                 $this->validations->offsetSet($ruleKey, false);
 
-                foreach ($errors->messages() as $messageList) {
+                foreach ($errors as $messageList) {
                     $errors = $this->errors->offsetExists($ruleKey) ? $this->errors->offsetGet($ruleKey) : [];
                     $this->errors->offsetSet($ruleKey, array_merge($errors, $messageList));
                 }
-
                 $this->validations->offsetSet($key, false);
 
                 return false;

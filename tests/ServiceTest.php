@@ -7,6 +7,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
+ *
  * @coversNothing
  */
 class ServiceTest extends TestCase
@@ -37,10 +38,9 @@ class ServiceTest extends TestCase
                 ];
             }
         };
-
         $service->run();
 
-        $this->assertEquals($service->getErrors()->all(), []);
+        $this->assertEquals($service->getErrors()->getArrayCopy(), []);
 
         $service = new class() extends Service {
             public static function getBindNames()
@@ -69,35 +69,7 @@ class ServiceTest extends TestCase
 
         $service->run();
 
-        $this->assertNotEquals($service->getErrors()->all(), []);
-    }
-
-    public function testWhenInputValueIsNotEmpty()
-    {
-        $service = new class(['result' => 'result value']) extends Service {
-            public static function getBindNames()
-            {
-                return [
-                    'result' => 'name for key1',
-                ];
-            }
-
-            public static function getLoaders()
-            {
-                return [];
-            }
-
-            public static function getRuleLists()
-            {
-                return [
-                    'result' => ['required'],
-                ];
-            }
-        };
-
-        $service->run();
-
-        $this->assertEquals($service->getErrors()->all(), []);
+        $this->assertNotEquals($service->getErrors()->getArrayCopy(), []);
     }
 
     public function testWhenBindNameValueIsNotEmpty()
@@ -123,47 +95,7 @@ class ServiceTest extends TestCase
 
         $service->run();
 
-        $this->assertEquals($service->getErrors()->all(), []);
-    }
-
-    public function testWhenInputValueIsServiceInitable()
-    {
-        $service = new class() extends Service {
-            public static function getLoaders()
-            {
-                return [
-                    'result' => function () {
-                        return 'child result value';
-                    },
-                ];
-            }
-        };
-
-        $service = new class(['result' => [get_class($service)]], []) extends Service {
-            public static function getBindNames()
-            {
-                return [
-                    'result' => 'parent result name',
-                ];
-            }
-
-            public static function getLoaders()
-            {
-                return [];
-            }
-
-            public static function getRuleLists()
-            {
-                return [
-                    'result' => ['required'],
-                ];
-            }
-        };
-
-        $value = $service->run();
-
-        $this->assertEquals($value, 'child result value');
-        $this->assertEquals($service->getErrors()->all(), []);
+        $this->assertEquals($service->getErrors()->getArrayCopy(), []);
     }
 
     public function testWhenInputValueIsBatchService()
@@ -206,6 +138,74 @@ class ServiceTest extends TestCase
             'child result value',
             'child result value',
         ]);
-        $this->assertEquals($service->getErrors()->all(), []);
+        $this->assertEquals($service->getErrors()->getArrayCopy(), []);
+    }
+
+    public function testWhenInputValueIsNotEmpty()
+    {
+        $service = new class(['result' => 'result value']) extends Service {
+            public static function getBindNames()
+            {
+                return [
+                    'result' => 'name for key1',
+                ];
+            }
+
+            public static function getLoaders()
+            {
+                return [];
+            }
+
+            public static function getRuleLists()
+            {
+                return [
+                    'result' => ['required'],
+                ];
+            }
+        };
+
+        $service->run();
+
+        $this->assertEquals($service->getErrors()->getArrayCopy(), []);
+    }
+
+    public function testWhenInputValueIsServiceInitable()
+    {
+        $service = new class() extends Service {
+            public static function getLoaders()
+            {
+                return [
+                    'result' => function () {
+                        return 'child result value';
+                    },
+                ];
+            }
+        };
+
+        $service = new class(['result' => [get_class($service)]], []) extends Service {
+            public static function getBindNames()
+            {
+                return [
+                    'result' => 'parent result name',
+                ];
+            }
+
+            public static function getLoaders()
+            {
+                return [];
+            }
+
+            public static function getRuleLists()
+            {
+                return [
+                    'result' => ['required'],
+                ];
+            }
+        };
+
+        $value = $service->run();
+
+        $this->assertEquals($value, 'child result value');
+        $this->assertEquals($service->getErrors()->getArrayCopy(), []);
     }
 }
