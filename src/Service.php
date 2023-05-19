@@ -2,36 +2,57 @@
 
 namespace FunctionalCoding;
 
-use ArrayObject;
-use Closure;
 use FunctionalCoding\Validation\Validator;
 
 abstract class Service
 {
     public const BIND_NAME_EXP = '/\{\{([a-z0-9\_\.\*]+)\}\}/';
-    protected ArrayObject $childs;
-    protected ArrayObject $data;
-    protected ArrayObject $errors;
-    protected ArrayObject $inputs;
-    protected ArrayObject $names;
-    protected bool $processed;
-    protected ArrayObject $validations;
-    private static Closure $localeResolver;
-    private static Closure $validationErrorListResolver;
+    protected \ArrayObject $childs;
+    protected \ArrayObject $data;
+    protected \ArrayObject $errors;
+    protected \ArrayObject $inputs;
+    protected bool $isResponsed;
+    protected bool $isRun;
+    protected \ArrayObject $names;
+    protected \ArrayObject $validations;
+    private static \Closure $localeResolver;
+    private static array $onFailCallbacks = [];
+    private static array $onStartCallbacks = [];
+    private static array $onSuccessCallbacks = [];
+    private static \Closure $responseErrorsResolver;
+    private static \Closure $responseResolver;
+    private static \Closure $responseResultResolver;
+    private static \Closure $validationErrorListResolver;
 
     public function __construct(array $inputs = [], array $names = [])
     {
-        $this->childs = new ArrayObject();
-        $this->data = new ArrayObject();
-        $this->errors = new ArrayObject();
-        $this->inputs = new ArrayObject($inputs);
-        $this->names = new ArrayObject($names);
-        $this->validations = new ArrayObject();
-        $this->processed = false;
+        $this->childs = new \ArrayObject();
+        $this->data = new \ArrayObject();
+        $this->errors = new \ArrayObject();
+        $this->inputs = new \ArrayObject($inputs);
+        $this->names = new \ArrayObject($names);
+        $this->validations = new \ArrayObject();
+        $this->isRun = false;
+        $this->isResponsed = false;
 
         foreach ($this->inputs as $key => $value) {
             $this->validate($key);
         }
+    }
+
+    public static function addOnFailCallback(\Closure $callback)
+    {
+        static::$onFailCallbacks[] = $callback;
+    }
+
+    public static function addOnStartCallback(\Closure $callback)
+    {
+        static::$onStartCallbacks[] = $callback;
+    }
+
+    public static function addOnSuccessCallback(\Closure $callback)
+    {
+        static::$onSuccessCallbacks[] = $callback;
     }
 
     public static function getAllBindNames()
@@ -42,7 +63,7 @@ abstract class Service
             $arr = array_merge($arr, $class::getBindNames());
         }
 
-        return new ArrayObject($arr);
+        return new \ArrayObject($arr);
     }
 
     public static function getAllCallbacks()
@@ -53,7 +74,7 @@ abstract class Service
             $arr = array_merge($arr, $class::getCallbacks());
         }
 
-        return new ArrayObject($arr);
+        return new \ArrayObject($arr);
     }
 
     public static function getAllLoaders()
@@ -64,7 +85,7 @@ abstract class Service
             $arr = array_merge($arr, $class::getLoaders());
         }
 
-        return new ArrayObject($arr);
+        return new \ArrayObject($arr);
     }
 
     public static function getAllPromiseLists()
@@ -75,7 +96,7 @@ abstract class Service
             $arr = array_merge_recursive($arr, $class::getPromiseLists());
         }
 
-        return new ArrayObject($arr);
+        return new \ArrayObject($arr);
     }
 
     public static function getAllRuleLists()
@@ -96,7 +117,7 @@ abstract class Service
             }
         }
 
-        return new ArrayObject($arr);
+        return new \ArrayObject($arr);
     }
 
     public static function getAllTraits()
@@ -110,7 +131,7 @@ abstract class Service
         $arr = array_merge($arr, static::getTraits());
         $arr = array_unique($arr);
 
-        return new ArrayObject($arr);
+        return new \ArrayObject($arr);
     }
 
     public static function getBindNames()
@@ -152,6 +173,65 @@ abstract class Service
         return [];
     }
 
+    public function getResponseBody()
+    {
+        $errors = $this->getResponseErrors();
+        $result = $this->getResponseResult();
+
+        if (!$this->isResponsed) {
+            if (empty($errors)) {
+                $this->runAfterCommitCallbacks();
+                foreach (static::$onSuccessCallbacks as $callback) {
+                    $callback();
+                }
+            } else {
+                foreach (static::$onFailCallbacks as $callback) {
+                    $callback();
+                }
+            }
+            $this->isResponsed = true;
+        }
+
+        if (!empty(static::$responseResolver)) {
+            return static::$responseResolver($result, $errors);
+        }
+
+        if (!empty($errors)) {
+            return ['errors' => $errors];
+        }
+
+        return [
+            'result' => $result,
+        ];
+    }
+
+    public function getResponseErrors()
+    {
+        $errors = $this->getTotalErrors();
+        $result = [];
+
+        if (!empty(static::$responseErrorsResolver)) {
+            return static::$responseErrorsResolver($errors);
+        }
+
+        array_walk_recursive($errors, function ($value) use (&$result) {
+            $result[] = $value;
+        });
+
+        return $result;
+    }
+
+    public function getResponseResult()
+    {
+        $result = $this->getData()->offsetExists('result') ? $this->getData()->offsetGet('result') : $this->resolveError();
+
+        if (!empty(static::$responseResultResolver)) {
+            return static::$responseResultResolver($result);
+        }
+
+        return $result;
+    }
+
     public static function getRuleLists()
     {
         return [];
@@ -159,15 +239,13 @@ abstract class Service
 
     public function getTotalErrors()
     {
-        $arr = $this->getErrors()->getArrayCopy();
-        $errors = [];
+        $errors = $this->getErrors()->getArrayCopy();
 
-        array_walk_recursive($arr, function ($value) use (&$errors) {
-            $errors[] = $value;
-        });
-
-        foreach ($this->getChilds() as $child) {
-            $errors = array_merge($errors, $child->getTotalErrors());
+        foreach ($this->getChilds() as $k => $child) {
+            $childErrors = $child->getTotalErrors();
+            if (!empty($childErrors)) {
+                $errors[$k] = $child->getTotalErrors();
+            }
         }
 
         return $errors;
@@ -184,7 +262,7 @@ abstract class Service
 
         ksort($arr);
 
-        return new ArrayObject($arr);
+        return new \ArrayObject($arr);
     }
 
     public static function initService($value)
@@ -219,7 +297,7 @@ abstract class Service
 
     public function run()
     {
-        if (!$this->processed) {
+        if (!$this->isRun) {
             foreach (array_keys((array) $this->inputs()) as $key) {
                 $this->validate($key);
             }
@@ -231,9 +309,9 @@ abstract class Service
             foreach (array_keys((array) $this->getAllLoaders()) as $key) {
                 $this->validate($key);
             }
-
-            $this->processed = true;
+            $this->isRun = true;
         }
+
         if (empty($this->getTotalErrors()) && !$this->getData()->offsetExists('result')) {
             throw new \Exception('result data key is not exists in '.static::class);
         }
@@ -260,12 +338,27 @@ abstract class Service
         }
     }
 
-    public static function setLocaleResolver(Closure $func)
+    public static function setLocaleResolver(\Closure $resolver)
     {
-        static::$localeResolver = $func;
+        static::$localeResolver = $resolver;
     }
 
-    public static function setValidationErrorListResolver(Closure $resolver)
+    public static function setResponseErrorsResolver(\Closure $resolver)
+    {
+        static::$responseErrorsResolver = $resolver;
+    }
+
+    public static function setResponseResolver(\Closure $resolver)
+    {
+        static::$responseResolver = $resolver;
+    }
+
+    public static function setResponseResultResolver(\Closure $resolver)
+    {
+        static::$responseResultResolver = $resolver;
+    }
+
+    public static function setValidationErrorListResolver(\Closure $resolver)
     {
         static::$validationErrorListResolver = $resolver;
     }
@@ -347,7 +440,7 @@ abstract class Service
 
         if (!empty($ruleLists[$key])) {
             if ($this->getAllRuleLists()->offsetExists($key.'.*')) {
-                $this->names->offsetSet($key.'.*', $this->resolveBindName('{{'.$key.'.*'.'}}'));
+                $this->names->offsetSet($key.'.*', $this->resolveBindName('{{'.$key.'.*}}'));
                 $ruleLists[$key.'.*'] = $this->getAllRuleLists()->offsetGet($key.'.*');
                 $keyVal = $data[$key];
                 if (!is_array($keyVal) && !($keyVal instanceof \ArrayAccess) && !in_array('array', $ruleLists[$key])) {
@@ -403,7 +496,7 @@ abstract class Service
         return $matches[1];
     }
 
-    protected function getClosureDependencies(Closure $func)
+    protected function getClosureDependencies(\Closure $func)
     {
         if (null == $func) {
             return [];
@@ -417,7 +510,7 @@ abstract class Service
 
             if (!ctype_lower($dep)) {
                 $dep = preg_replace('/\s+/u', '', ucwords($dep));
-                $dep = preg_replace('/(.)(?=[A-Z])/u', '$1'.'_', $dep);
+                $dep = preg_replace('/(.)(?=[A-Z])/u', '$1_', $dep);
                 $dep = mb_strtolower($dep, 'UTF-8');
             }
 
@@ -495,7 +588,7 @@ abstract class Service
 
     protected function resolve($func)
     {
-        $resolver = Closure::bind($func, $this);
+        $resolver = \Closure::bind($func, $this);
         $depNames = $this->getClosureDependencies($func);
         $depVals = [];
         $params = (new \ReflectionFunction($resolver))->getParameters();
@@ -519,7 +612,7 @@ abstract class Service
         while ($boundKeys = $this->getBindKeys($name)) {
             $key = $boundKeys[0];
             $pattern = '/\{\{'.$key.'\}\}/';
-            $bindNames = new ArrayObject(array_merge(
+            $bindNames = new \ArrayObject(array_merge(
                 $this->getAllBindNames()->getArrayCopy(),
                 $this->names->getArrayCopy(),
             ));
