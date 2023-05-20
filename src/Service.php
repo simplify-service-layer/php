@@ -444,7 +444,7 @@ abstract class Service
         if (!$this->getAllLoaders()->offsetExists($key) && !$this->inputs->offsetExists($key)) {
             $ruleLists[$key] = array_filter($ruleLists[$key], function ($rule) {
                 return $this->isRequiredRule($rule);
-            }, ARRAY_FILTER_USE_KEY);
+            });
         }
 
         if (!empty($ruleLists[$key])) {
@@ -646,7 +646,7 @@ abstract class Service
     protected function validate($key)
     {
         if (count(explode('.', $key)) > 1) {
-            throw new \Exception('does not support validation with child key in '.static::class);
+            $this->validate(explode('.', $key)[0]);
         }
 
         if ($this->validations->offsetExists($key)) {
@@ -689,7 +689,7 @@ abstract class Service
             $locale = $this->getLocale();
             $errors = $this->getValidationErrors(
                 $locale,
-                $data->getArrayCopy(),
+                array_merge($this->data->getArrayCopy(), $data->getArrayCopy()),
                 [$ruleKey => $ruleList],
                 $this->names->getArrayCopy()
             );
