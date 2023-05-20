@@ -389,28 +389,35 @@ abstract class Service
             return $data;
         }
 
-        $isBatchService = is_array($value) && array_values($value) === $value && !empty($value) && static::isInitable($value[0]);
-        $values = $isBatchService ? $value : [$value];
+        $hasServiceInArray = false;
+        if (!empty($value) && is_array($value) && array_values($value) === $value) {
+            foreach ($value as $v) {
+                if (static::isInitable($v)) {
+                    $hasServiceInArray = true;
+                }
+            }
+        }
+        $values = $hasServiceInArray ? $value : [$value];
         $hasError = false;
 
         foreach ($values as $i => $v) {
-            if (!static::isInitable($v)) {
+            if (static::isInitable($v)) {
+                isset($v[2]) ?: $v[2] = [];
+                isset($v[3]) ?: $v[3] = $this;
+
+                foreach ($v[2] as $k => $name) {
+                    $v[2][$k] = $this->resolveBindName($name);
+                }
+                $service = static::initService($v);
+                $resolved = $service->run();
+            } elseif ($v instanceof self) {
+                $service = $v;
+                $resolved = $service->run();
+            } else {
                 break;
             }
 
-            isset($v[2]) ?: $v[2] = [];
-            isset($v[3]) ?: $v[3] = $this;
-
-            foreach ($v[2] as $k => $name) {
-                $v[2][$k] = $this->resolveBindName($name);
-            }
-
-            $service = static::initService($v);
-            $resolved = $service->run();
-
-            $this->childs->offsetSet($isBatchService ? $key.'.'.$i : $key, $service);
-
-            $values[$i] = $resolved;
+            $this->childs->offsetSet($hasServiceInArray ? $key.'.'.$i : $key, $service);
 
             if ($this->isResolveError($resolved)) {
                 unset($values[$i]);
@@ -418,10 +425,12 @@ abstract class Service
 
                 $this->validations->offsetSet($key, false);
             }
+
+            $values[$i] = $resolved;
         }
 
         if (!$hasError) {
-            $data->offsetSet($key, $isBatchService ? $values : $values[0]);
+            $data->offsetSet($key, $hasServiceInArray ? $values : $values[0]);
         }
 
         return $data;
