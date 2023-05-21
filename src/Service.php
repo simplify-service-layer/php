@@ -193,7 +193,7 @@ abstract class Service
         }
 
         if (!empty(static::$responseResolver)) {
-            return static::$responseResolver($result, $errors);
+            return (static::$responseResolver)($result, $errors);
         }
 
         if (!empty($errors)) {
@@ -211,7 +211,7 @@ abstract class Service
         $result = [];
 
         if (!empty(static::$responseErrorsResolver)) {
-            return static::$responseErrorsResolver($errors);
+            return (static::$responseErrorsResolver)($errors);
         }
 
         array_walk_recursive($errors, function ($value) use (&$result) {
@@ -226,7 +226,7 @@ abstract class Service
         $result = $this->getData()->offsetExists('result') ? $this->getData()->offsetGet('result') : $this->resolveError();
 
         if (!empty(static::$responseResultResolver)) {
-            return static::$responseResultResolver($result);
+            return (static::$responseResultResolver)($result);
         }
 
         return $result;
@@ -269,12 +269,10 @@ abstract class Service
     {
         isset($value[1]) ?: $value[1] = [];
         isset($value[2]) ?: $value[2] = [];
-        isset($value[3]) ?: $value[3] = null;
 
         $class = $value[0];
         $data = $value[1];
         $names = $value[2];
-        $parent = $value[3];
 
         foreach ($data as $key => $value) {
             if ('' === $value) {
@@ -282,7 +280,7 @@ abstract class Service
             }
         }
 
-        return new $class($data, $names, $parent);
+        return new $class($data, $names);
     }
 
     public function inputs()
@@ -402,8 +400,8 @@ abstract class Service
 
         foreach ($values as $i => $v) {
             if (static::isInitable($v)) {
+                isset($v[1]) ?: $v[1] = [];
                 isset($v[2]) ?: $v[2] = [];
-                isset($v[3]) ?: $v[3] = $this;
 
                 foreach ($v[2] as $k => $name) {
                     $v[2][$k] = $this->resolveBindName($name);
@@ -532,7 +530,7 @@ abstract class Service
     protected function getLocale()
     {
         if (!empty(static::$localeResolver)) {
-            return static::$localeResolver();
+            return (static::$localeResolver)();
         }
 
         return 'en';
@@ -574,7 +572,7 @@ abstract class Service
     protected function getValidationErrors($locale, $data, $ruleLists, $names)
     {
         if (!empty(static::$validationErrorListResolver)) {
-            return static::$validationErrorListResolver($locale, $data, $ruleLists, $names);
+            return (static::$validationErrorListResolver)($locale, $data, $ruleLists, $names);
         }
 
         $validator = Validator::newInstance($locale, $data, $ruleLists, $names);
