@@ -4,7 +4,7 @@ namespace FunctionalCoding;
 
 use FunctionalCoding\Validation\Validator;
 
-abstract class Service
+class Service
 {
     public const BIND_NAME_EXP = '/\{\{([a-z0-9\_\.\*]+)\}\}/';
     protected \ArrayObject $childs;
@@ -410,6 +410,8 @@ abstract class Service
                 $service = $v;
                 $resolved = $service->run();
             } else {
+                $values[$i] = $v;
+
                 break;
             }
 
@@ -444,20 +446,24 @@ abstract class Service
         }
 
         if (!empty($ruleLists[$key])) {
-            if ($this->getAllRuleLists()->offsetExists($key.'.*')) {
+            if ($data->offsetExists($key) && $this->getAllRuleLists()->offsetExists($key.'.*')) {
                 $this->names->offsetSet($key.'.*', $this->resolveBindName('{{'.$key.'.*}}'));
                 $ruleLists[$key.'.*'] = $this->getAllRuleLists()->offsetGet($key.'.*');
                 $keyVal = $data[$key];
                 if (!is_array($keyVal) && !($keyVal instanceof \ArrayAccess) && !in_array('array', $ruleLists[$key])) {
                     throw new \Exception($key.' key must has array rule');
                 }
-                foreach ($keyVal as $i => $v) {
-                    $rules[$key.'.'.$i] = $ruleLists[$key.'.*'];
+
+                foreach (array_keys($this->toArray($keyVal)) as $i) {
+                    $ruleLists[$key.'.'.$i] = $ruleLists[$key.'.*'];
                     $this->names->offsetSet(
                         $key.'.'.$i,
                         str_replace('*', $i, $this->names->offsetGet($key.'.*'))
                     );
                 }
+            }
+
+            if ($this->names->offsetExists($key.'.*')) {
                 unset($ruleLists[$key.'.*']);
                 $this->names->offsetUnset($key.'.*');
             }
@@ -487,6 +493,10 @@ abstract class Service
                 $ruleList[$i] = preg_replace(static::BIND_NAME_EXP, '$1', $rule);
             }
             $ruleLists[$k] = $ruleList;
+
+            if (empty($ruleLists[$k])) {
+                unset($ruleLists[$k]);
+            }
         }
 
         return $ruleLists;
@@ -693,10 +703,23 @@ abstract class Service
         $ruleLists = $this->getAvailableRuleList($key, $data);
 
         foreach ($ruleLists as $ruleKey => $ruleList) {
+            $k = explode('.', $ruleKey)[0];
             $locale = $this->getLocale();
+            $items = array_merge(
+                $this->data->getArrayCopy(),
+                $data->getArrayCopy()
+            );
+            if (array_key_exists($k, $items) && !empty($items[$k])) {
+                $item = $this->toArray($items[$k]);
+                if (is_null($item)) {
+                    throw new \Exception('data {'.$k.'} key can\'t convert primative value');
+                }
+                $items[$k] = $item;
+            }
+
             $errors = $this->getValidationErrors(
                 $locale,
-                array_merge($this->data->getArrayCopy(), $data->getArrayCopy()),
+                $items,
                 [$ruleKey => $ruleList],
                 $this->names->getArrayCopy()
             );
@@ -746,5 +769,16 @@ abstract class Service
         }
 
         return true;
+    }
+
+    private function toArray($value)
+    {
+        if (is_object($value) && method_exists($value, 'toArray')) {
+            $result = $value->toArray();
+        } else {
+            $result = json_decode(json_encode($value), true);
+        }
+
+        return $result;
     }
 }
