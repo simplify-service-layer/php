@@ -109,10 +109,10 @@ class Service
                     if (!array_key_exists($key, $arr)) {
                         $arr[$key] = [];
                     }
-                    if (in_array($rule, $arr[$key])) {
-                        throw new \Exception('duplicated rule exist in same key in '.static::class);
+                    if (!in_array($rule, $arr[$key])) {
+                        // throw new \Exception('duplicated rule exist in same key in '.static::class);
+                        array_push($arr[$key], $rule);
                     }
-                    array_push($arr[$key], $rule);
                 }
             }
         }
