@@ -168,6 +168,15 @@ class Service
         return [];
     }
 
+    public function getNames()
+    {
+        $data = clone $this->names;
+
+        $data->ksort();
+
+        return $data;
+    }
+
     public static function getPromiseLists()
     {
         return [];
