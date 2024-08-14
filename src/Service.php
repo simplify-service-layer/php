@@ -19,9 +19,7 @@ class Service
     private static array $onBeforeRunCallbacks = [];
     private static array $onFailCallbacks = [];
     private static array $onSuccessCallbacks = [];
-    private static \Closure $responseErrorsResolver;
     private static \Closure $responseResolver;
-    private static \Closure $responseResultResolver;
     private static \Closure $validationErrorListResolver;
 
     public function __construct(array $inputs = [], array $names = [])
@@ -184,8 +182,14 @@ class Service
 
     public function getResponseBody()
     {
-        $errors = $this->getResponseErrors();
-        $result = $this->getResponseResult();
+        $totalErrors = $this->getTotalErrors();
+        $errors = [];
+
+        array_walk_recursive($totalErrors, function ($value) use (&$errors) {
+            $errors[] = $value;
+        });
+
+        $result = $this->getData()->offsetExists('result') ? $this->getData()->offsetGet('result') : null;
 
         if (!empty(static::$responseResolver)) {
             return (static::$responseResolver)($result, $errors);
@@ -198,33 +202,6 @@ class Service
         return [
             'result' => $result,
         ];
-    }
-
-    public function getResponseErrors()
-    {
-        $errors = $this->getTotalErrors();
-        $result = [];
-
-        if (!empty(static::$responseErrorsResolver)) {
-            return (static::$responseErrorsResolver)($errors);
-        }
-
-        array_walk_recursive($errors, function ($value) use (&$result) {
-            $result[] = $value;
-        });
-
-        return $result;
-    }
-
-    public function getResponseResult()
-    {
-        $result = $this->getData()->offsetExists('result') ? $this->getData()->offsetGet('result') : $this->resolveError();
-
-        if (!empty(static::$responseResultResolver)) {
-            return (static::$responseResultResolver)($result);
-        }
-
-        return $result;
     }
 
     public static function getRuleLists()
@@ -348,19 +325,9 @@ class Service
         static::$localeResolver = $resolver;
     }
 
-    public static function setResponseErrorsResolver(\Closure $resolver)
-    {
-        static::$responseErrorsResolver = $resolver;
-    }
-
     public static function setResponseResolver(\Closure $resolver)
     {
         static::$responseResolver = $resolver;
-    }
-
-    public static function setResponseResultResolver(\Closure $resolver)
-    {
-        static::$responseResultResolver = $resolver;
     }
 
     public static function setValidationErrorListResolver(\Closure $resolver)
