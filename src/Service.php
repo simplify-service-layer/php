@@ -359,15 +359,15 @@ class Service
             return $data;
         }
 
-        $hasServiceInArray = false;
+        $hasServicesInArray = false;
         if (!empty($value) && is_array($value) && array_values($value) === $value) {
             foreach ($value as $v) {
                 if (static::isInitable($v)) {
-                    $hasServiceInArray = true;
+                    $hasServicesInArray = true;
                 }
             }
         }
-        $values = $hasServiceInArray ? $value : [$value];
+        $values = $hasServicesInArray ? $value : [$value];
         $hasError = false;
 
         foreach ($values as $i => $v) {
@@ -389,7 +389,7 @@ class Service
                 break;
             }
 
-            $this->childs->offsetSet($hasServiceInArray ? $key.'.'.$i : $key, $service);
+            $this->childs->offsetSet($hasServicesInArray ? $key.'.'.$i : $key, $service);
 
             if ($this->isResolveError($resolved)) {
                 unset($values[$i]);
@@ -402,7 +402,7 @@ class Service
         }
 
         if (!$hasError) {
-            $data->offsetSet($key, $hasServiceInArray ? $values : $values[0]);
+            $data->offsetSet($key, $hasServicesInArray ? $values : $values[0]);
         }
 
         return $data;
