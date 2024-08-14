@@ -699,12 +699,8 @@ class Service
             );
 
             if (!empty($errorLists)) {
+                $this->errors->offsetSet($ruleKey, $errorLists[$ruleKey]);
                 $this->validations->offsetSet($ruleKey, false);
-
-                foreach ($errorLists as $errorList) {
-                    $errors = $this->errors->offsetExists($ruleKey) ? $this->errors->offsetGet($ruleKey) : [];
-                    $this->errors->offsetSet($ruleKey, array_merge($errors, $errorList));
-                }
                 $this->validations->offsetSet($key, false);
 
                 return false;
