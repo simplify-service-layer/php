@@ -647,15 +647,8 @@ class Service
         $promiseList = $this->getAllPromiseLists()->offsetExists($key) ? $this->getAllPromiseLists()->offsetGet($key) : [];
 
         foreach ($promiseList as $promise) {
-            $segs = explode(':', $promise);
-            $promiseKey = $segs[0];
-            $isStrict = isset($segs[1]) && 'strict' == $segs[1];
-
-            // isStrict mode is deprecated
-            // if (!$this->validate($promiseKey) && $isStrict) {
-            if (!$this->validate($promiseKey)) {
+            if (!$this->validate($promise)) {
                 $this->validations->offsetSet($key, false);
-
                 return false;
             }
         }
