@@ -691,19 +691,19 @@ class Service
                 $items[$k] = $item;
             }
 
-            $errors = $this->getValidationErrors(
+            $errorLists = $this->getValidationErrors(
                 $locale,
                 $items,
                 [$ruleKey => $ruleList],
                 $this->names->getArrayCopy()
             );
 
-            if (!empty($errors)) {
+            if (!empty($errorLists)) {
                 $this->validations->offsetSet($ruleKey, false);
 
-                foreach ($errors as $messageList) {
+                foreach ($errorLists as $errorList) {
                     $errors = $this->errors->offsetExists($ruleKey) ? $this->errors->offsetGet($ruleKey) : [];
-                    $this->errors->offsetSet($ruleKey, array_merge($errors, $messageList));
+                    $this->errors->offsetSet($ruleKey, array_merge($errors, $errorList));
                 }
                 $this->validations->offsetSet($key, false);
 
