@@ -1,6 +1,5 @@
 <?php
 
-
 namespace FunctionalCoding\Tests\Validation;
 
 use FunctionalCoding\Validation\Validator;

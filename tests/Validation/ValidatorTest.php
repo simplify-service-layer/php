@@ -7,9 +7,9 @@ namespace FunctionalCoding\Tests\Validation;
  *
  * @coversNothing
  */
-final class SomeArrayTest extends _TestCase
+final class ValidatorTest extends _TestCase
 {
-    public function test(): void
+    public function testArray(): void
     {
         $errorKeys1 = $this->getValidatorErrors(
             ['key1' => []],
