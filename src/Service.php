@@ -11,7 +11,6 @@ class Service
     protected \ArrayObject $data;
     protected \ArrayObject $errors;
     protected \ArrayObject $inputs;
-    protected bool $isResponsed;
     protected bool $isRun;
     protected \ArrayObject $names;
     protected \ArrayObject $validations;
@@ -31,7 +30,6 @@ class Service
         $this->names = new \ArrayObject($names);
         $this->validations = new \ArrayObject();
         $this->isRun = false;
-        $this->isResponsed = false;
 
         foreach ($this->inputs as $key => $value) {
             $this->validate($key);
