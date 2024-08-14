@@ -11,11 +11,11 @@ final class ValidatorTest extends _TestCase
 {
     public function testArray(): void
     {
-        $errorKeys1 = $this->getValidatorErrors(
+        $errorKeys1 = $this->getValidationErrorLists(
             ['key1' => []],
             ['key1' => ['array']],
         )->keys();
-        $errorKeys2 = $this->getValidatorErrors(
+        $errorKeys2 = $this->getValidationErrorLists(
             ['key1' => 'aaa'],
             ['key1' => ['array']],
         )->keys();
@@ -26,12 +26,12 @@ final class ValidatorTest extends _TestCase
 
     public function testSomeOfArray(): void
     {
-        $errorKeys1 = $this->getValidatorErrors(
+        $errorKeys1 = $this->getValidationErrorLists(
             ['key1' => 'aaa,ccc', 'opts' => ['aaa', 'bbb', 'ccc']],
             ['key1' => ['some_of_array:opts']],
         )->keys();
 
-        $errorKeys2 = $this->getValidatorErrors(
+        $errorKeys2 = $this->getValidationErrorLists(
             ['key1' => 'aaa,ddd', 'opts' => ['aaa', 'bbb', 'ccc']],
             ['key1' => ['some_of_array:opts']],
         )->keys();

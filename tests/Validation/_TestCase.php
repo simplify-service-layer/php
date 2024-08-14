@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
  */
 class _TestCase extends TestCase
 {
-    protected function getValidatorErrors(array $data = [], array $ruleLists = [], array $names = [], $locale = 'en')
+    protected function getValidationErrorLists(array $data = [], array $ruleLists = [], array $names = [], $locale = 'en')
     {
         $validator = Validator::newInstance($locale, $data, $ruleLists, $names);
         $validator->passes();
