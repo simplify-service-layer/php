@@ -31,6 +31,12 @@ class Service
         $this->validations = new \ArrayObject();
         $this->isRun = false;
 
+        foreach (array_keys($inputs) as $inputKey) {
+            if (count(explode('.', $inputKey)) > 1) {
+                throw new \Exception("input key can't include '.'");
+            }
+        }
+
         foreach ($this->inputs as $key => $value) {
             $this->validate($key);
         }
@@ -77,6 +83,11 @@ class Service
     {
         $arr = [];
 
+        foreach (array_keys(static::getLoaders()) as $loaderKey) {
+            if (count(explode('.', $loaderKey)) > 1) {
+                throw new \Exception("loader key can't include '.'");
+            }
+        }
         foreach ([...static::getAllTraits(), static::class] as $class) {
             $arr = array_merge($arr, $class::getLoaders());
         }
@@ -166,11 +177,11 @@ class Service
 
     public function getNames()
     {
-        $data = clone $this->names;
+        $names = clone $this->names;
 
-        $data->ksort();
+        $names->ksort();
 
-        return $data;
+        return $names;
     }
 
     public static function getPromiseLists()
@@ -333,7 +344,7 @@ class Service
         static::$validationErrorListResolver = $resolver;
     }
 
-    protected function getAvailableData($key)
+    protected function getLoadedDataWith($key)
     {
         $data = $this->getData();
         $loader = $this->getAllLoaders()->offsetExists($key) ? $this->getAllLoaders()->offsetGet($key) : null;
@@ -408,41 +419,32 @@ class Service
         return $data;
     }
 
-    protected function getAvailableRuleList($key, $data)
+    protected function getAvailableRuleLists($key, $data, $ruleLists)
     {
-        $ruleLists = [
-            $key => $this->getAllRuleLists()->offsetExists($key) ? $this->getAllRuleLists()->offsetGet($key) : [],
-        ];
-        if (!$this->getAllLoaders()->offsetExists($key) && !$this->inputs->offsetExists($key)) {
+        if (!$data->offsetExists($key)) {
             $ruleLists[$key] = array_filter($ruleLists[$key], function ($rule) {
-                return $this->isRequiredRule($rule);
+                return preg_match('/^required/', $rule);
             });
         }
 
-        if (!empty($ruleLists[$key])) {
-            if ($data->offsetExists($key) && $this->getAllRuleLists()->offsetExists($key.'.*')) {
-                $this->names->offsetSet($key.'.*', $this->resolveBindName('{{'.$key.'.*}}'));
-                $ruleLists[$key.'.*'] = $this->getAllRuleLists()->offsetGet($key.'.*');
-                $keyVal = $data[$key];
-                if (!is_array($keyVal) && !($keyVal instanceof \ArrayAccess) && !in_array('array', $ruleLists[$key])) {
-                    throw new \Exception($key.' key must has array rule');
-                }
-
-                foreach (array_keys($this->toArray($keyVal)) as $i) {
-                    $ruleLists[$key.'.'.$i] = $ruleLists[$key.'.*'];
-                    $this->names->offsetSet(
-                        $key.'.'.$i,
-                        str_replace('*', $i, $this->names->offsetGet($key.'.*'))
-                    );
-                }
+        if ($data->offsetExists($key) && array_key_exists($key.'.*', $ruleLists)) {
+            $this->names->offsetSet($key.'.*', $this->resolveBindName('{{'.$key.'.*}}'));
+            if (!in_array('array', array_key_exists($key, $ruleLists) ? $ruleLists[$key]: [])) {
+                throw new \Exception($key.' key must has array rule in '.static::class);
             }
 
-            if ($this->names->offsetExists($key.'.*')) {
-                unset($ruleLists[$key.'.*']);
-                $this->names->offsetUnset($key.'.*');
+            foreach (array_keys($this->toArray($data[$key])) as $i) {
+                $ruleLists[$key.'.'.$i] = $ruleLists[$key.'.*'];
+                $this->names->offsetSet(
+                    $key.'.'.$i,
+                    str_replace('*', $i, $this->names->offsetGet($key.'.*'))
+                );
             }
+        }
 
-            $this->names->offsetSet($key, $this->resolveBindName('{{'.$key.'}}'));
+        if ($this->names->offsetExists($key.'.*')) {
+            unset($ruleLists[$key.'.*']);
+            $this->names->offsetUnset($key.'.*');
         }
 
         foreach ($ruleLists as $k => $ruleList) {
@@ -459,7 +461,7 @@ class Service
                         continue;
                     }
 
-                    if (!$this->isRequiredRule($rule) && !$this->getData()->offsetExists($bindKey)) {
+                    if (!preg_match('/^required/', $rule) && !$this->getData()->offsetExists($bindKey)) {
                         throw new \Exception('"'.$bindKey.'" key required rule not exists in '.static::class);
                     }
                 }
@@ -563,11 +565,6 @@ class Service
         return $validator->errors()->messages();
     }
 
-    protected function isRequiredRule($rule)
-    {
-        return preg_match('/^required/', $rule);
-    }
-
     protected function isResolveError($value)
     {
         $errorClass = get_class($this->resolveError());
@@ -666,8 +663,16 @@ class Service
             return false;
         }
 
-        $data = $this->getAvailableData($key);
-        $ruleLists = $this->getAvailableRuleList($key, $data);
+        $ruleLists = array_filter($this->getAllRuleLists()->getArrayCopy(), function ($k) use ($key) {
+            return preg_match('/^'.$key.'[.]{0,1}/', $k);
+        }, ARRAY_FILTER_USE_KEY);
+
+        if (!empty($ruleLists[$key])) {
+            $this->names->offsetSet($key, $this->resolveBindName('{{'.$key.'}}'));
+        }
+
+        $data = $this->getLoadedDataWith($key);
+        $ruleLists = $this->getAvailableRuleLists($key, $data, $ruleLists);
 
         foreach ($ruleLists as $ruleKey => $ruleList) {
             $k = explode('.', $ruleKey)[0];
