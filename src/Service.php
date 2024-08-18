@@ -6,7 +6,7 @@ use FunctionalCoding\Validation\Validator;
 
 class Service
 {
-    public const BIND_NAME_EXP = '/\{\{([a-z0-9\_\.\*]+)\}\}/';
+    public const BIND_NAME_EXP = '/\{\{([a-zA-Z][\w\.\*]+)\}\}/';
     protected \ArrayObject $childs;
     protected \ArrayObject $data;
     protected \ArrayObject $errors;
@@ -15,8 +15,8 @@ class Service
     protected \ArrayObject $names;
     protected \ArrayObject $validations;
     private static \Closure $localeResolver;
-    private static array $onBeforeRunCallbacks = [];
     private static array $onFailCallbacks = [];
+    private static array $onStartCallbacks = [];
     private static array $onSuccessCallbacks = [];
     private static \Closure $responseResolver;
     private static \Closure $validationErrorListResolver;
@@ -32,8 +32,8 @@ class Service
         $this->isRun = false;
 
         foreach (array_keys($inputs) as $inputKey) {
-            if (count(explode('.', $inputKey)) > 1) {
-                throw new \Exception("input key can't include '.'");
+            if (!preg_match('/^[a-zA-Z][\w-]{0,}/', $inputKey)) {
+                throw new \Exception($inputKey.' loader key is not support pattern in '.static::class);
             }
         }
 
@@ -42,14 +42,14 @@ class Service
         }
     }
 
-    public static function addOnBeforeRunCallback(\Closure $callback)
-    {
-        static::$onBeforeRunCallbacks[] = $callback;
-    }
-
     public static function addOnFailCallback(\Closure $callback)
     {
         static::$onFailCallbacks[] = $callback;
+    }
+
+    public static function addOnStartCallback(\Closure $callback)
+    {
+        static::$onStartCallbacks[] = $callback;
     }
 
     public static function addOnSuccessCallback(\Closure $callback)
@@ -84,10 +84,11 @@ class Service
         $arr = [];
 
         foreach (array_keys(static::getLoaders()) as $loaderKey) {
-            if (count(explode('.', $loaderKey)) > 1) {
-                throw new \Exception("loader key can't include '.'");
+            if (!preg_match('/^[a-zA-Z][\w-]{0,}/', $loaderKey)) {
+                throw new \Exception($loaderKey.' loader key is not support pattern in '.static::class);
             }
         }
+
         foreach ([...static::getAllTraits(), static::class] as $class) {
             $arr = array_merge($arr, $class::getLoaders());
         }
@@ -111,15 +112,16 @@ class Service
         $arr = [];
 
         foreach ([...static::getAllTraits(), static::class] as $class) {
+            $arr[$class] = [];
             foreach ($class::getRuleLists() as $key => $ruleList) {
+                if (!is_array($ruleList)) {
+                    $ruleList = [$ruleList];
+                }
                 foreach ($ruleList as $rule) {
-                    if (!array_key_exists($key, $arr)) {
-                        $arr[$key] = [];
+                    if (!array_key_exists($key, $arr[$class])) {
+                        $arr[$class][$key] = [];
                     }
-                    if (!in_array($rule, $arr[$key])) {
-                        // throw new \Exception('duplicated rule exist in same key in '.static::class);
-                        array_push($arr[$key], $rule);
-                    }
+                    array_push($arr[$class][$key], $rule);
                 }
             }
         }
@@ -132,6 +134,9 @@ class Service
         $arr = [];
 
         foreach (static::getTraits() as $class) {
+            if (!$class instanceof Service) {
+                throw new \Exception('trait class must instanceof Service');
+            }
             $arr = array_merge($arr, $class::getAllTraits()->getArrayCopy());
         }
 
@@ -246,6 +251,18 @@ class Service
         return new \ArrayObject($arr);
     }
 
+    public static function getValidationErrors($locale, $data, $ruleLists, $names)
+    {
+        if (!empty(static::$validationErrorListResolver)) {
+            return (static::$validationErrorListResolver)($locale, $data, $ruleLists, $names);
+        }
+
+        $validator = Validator::newInstance($locale, $data, $ruleLists, $names);
+        $validator->passes();
+
+        return $validator->errors()->messages();
+    }
+
     public static function initService($value)
     {
         isset($value[1]) ?: $value[1] = [];
@@ -274,20 +291,42 @@ class Service
         return is_array($value) && array_key_exists(0, $value) && is_string($value[0]) && is_a($value[0], Service::class, true);
     }
 
-    public function run()
+    public function run($isRoot = true)
     {
         if (!$this->isRun) {
+            if ($isRoot) {
+                foreach (static::$onStartCallbacks as $callback) {
+                    $callback();
+                }
+            }
+
             foreach (array_keys((array) $this->inputs()) as $key) {
                 $this->validate($key);
             }
 
-            foreach (array_keys((array) $this->getAllRuleLists()) as $key) {
-                $this->validate($key);
+            foreach (array_keys((array) $this->getAllRuleLists()) as $class) {
+                foreach (array_keys($this->getAllRuleLists()[$class]) as $key) {
+                    $this->validate($key);
+                }
             }
 
             foreach (array_keys((array) $this->getAllLoaders()) as $key) {
                 $this->validate($key);
             }
+
+            if ($isRoot) {
+                if (empty($this->getTotalErrors())) {
+                    $this->runAllDeferCallbacks();
+                    foreach (static::$onSuccessCallbacks as $callback) {
+                        $callback();
+                    }
+                } else {
+                    foreach (static::$onFailCallbacks as $callback) {
+                        $callback();
+                    }
+                }
+            }
+
             $this->isRun = true;
         }
 
@@ -300,33 +339,6 @@ class Service
         }
 
         return $this->getData()->offsetGet('result');
-    }
-
-    public function runWithLifeCycleCallbacks()
-    {
-        foreach (static::$onBeforeRunCallbacks as $callback) {
-            $callback();
-        }
-
-        $result = $this->run();
-        $errors = $this->getTotalErrors();
-
-        if (empty($errors)) {
-            $this->runDeferCallbacks();
-            foreach (static::$onSuccessCallbacks as $callback) {
-                $callback();
-            }
-        } else {
-            foreach (static::$onFailCallbacks as $callback) {
-                $callback();
-            }
-        }
-
-        foreach ($this->childs as $child) {
-            $child->runDeferCallbacks();
-        }
-
-        return $result;
     }
 
     public static function setLocaleResolver(\Closure $resolver)
@@ -342,6 +354,145 @@ class Service
     public static function setValidationErrorListResolver(\Closure $resolver)
     {
         static::$validationErrorListResolver = $resolver;
+    }
+
+    protected function filterAvailableExpandedRuleLists($key, $data, $ruleLists)
+    {
+        foreach (array_keys($ruleLists) as $k) {
+            $segs = explode('.', $k);
+            for ($i = 0; $i < count($segs) - 1; ++$i) {
+                $parentKey = implode('.', array_slice($segs, 0, $i + 1));
+                if (!$this->hasArrayObjectRuleInRuleList(array_key_exists($parentKey, $ruleLists) ? $ruleLists[$parentKey] : null)) {
+                    throw new \Exception($parentKey.' key must has array rule in '.static::class);
+                }
+            }
+        }
+
+        $i = 0;
+        while (!empty($filteredRuleLists = array_filter($ruleLists, function ($k) {
+            return preg_match('/\.\*$/', $k) || preg_match('/\.\*\./', $k);
+        }, ARRAY_FILTER_USE_KEY))) {
+            ++$i;
+            foreach (array_keys($filteredRuleLists) as $rKey) {
+                $matches = [];
+                preg_match('/^(.+?)\.\*/', $rKey, $matches);
+                $matches[1] = $matches[1].'.*';
+                $allSegs = explode('.', $matches[1]);
+                $segs = [];
+                $rKeyVal = $data;
+                $isSuccess = true;
+
+                while ($allSegs) {
+                    $seg = array_shift($allSegs);
+                    $segs[] = $seg;
+                    $k = implode('.', $segs);
+
+                    if (!is_array($rKeyVal) || (!empty($allSegs) && !array_key_exists($seg, $rKeyVal))) {
+                        $isSuccess = false;
+
+                        break;
+                    }
+
+                    if (!empty($allSegs)) {
+                        $rKeyVal = $rKeyVal[$seg];
+                    }
+                }
+
+                if ($isSuccess) {
+                    foreach ($rKeyVal as $k => $v) {
+                        $ruleLists[preg_replace('/^'.$allSegs.'\.\*/', $allSegs.'.'.$k, $rKey)] = $ruleLists[$rKey];
+                        $name = $this->resolveBindName('{{'.$rKey.'}}');
+                        $name = preg_replace('{{'.$i.'}}', $k, $name);
+                        $this->names->offsetSet($rKey, $name);
+                    }
+                    unset($ruleLists[$rKey]);
+                    $this->names->offsetUnset($rKey);
+                }
+            }
+        }
+
+        foreach (array_keys($ruleLists) as $rKey) {
+            $allSegs = explode('.', $rKey);
+            $segs = [];
+            $rKeyVal = $data;
+            while ($allSegs) {
+                $seg = array_shift($allSegs);
+                $segs[] = $seg;
+                $k = implode('.', $segs);
+
+                if (!array_key_exists($k, $ruleLists)) {
+                    break;
+                }
+
+                if (is_array($rKeyVal) && !array_key_exists($seg, $rKeyVal)) {
+                    $ruleLists[$k] = $this->filterPresentRelatedRuleList($ruleLists[$k]);
+                }
+
+                if (!is_array($rKeyVal) || ($k != $rKey && !array_key_exists($seg, $rKeyVal))) {
+                    $this->validations->offsetSet($key, false);
+                    $removeRuleLists = array_filter($ruleLists, function ($v) use ($k) {
+                        return preg_match('/^'.$k.'\./', $v);
+                    }, ARRAY_FILTER_USE_KEY);
+                    foreach (array_keys($removeRuleLists) as $v) {
+                        unset($ruleLists[$v]);
+                    }
+                    $removeNames = array_filter((array) $this->names, function ($v) use ($k) {
+                        return preg_match('/^'.$k.'\./', $v);
+                    }, ARRAY_FILTER_USE_KEY);
+                    foreach (array_keys($removeNames) as $v) {
+                        $this->names->offsetUnset($v);
+                    }
+
+                    break;
+                }
+
+                if ($k != $rKey) {
+                    $rKeyVal = $rKeyVal[$seg];
+                }
+            }
+        }
+
+        return $ruleLists;
+    }
+
+    protected function filterPresentRelatedRuleList($ruleList)
+    {
+        return array_filter($ruleList, function ($rule) {
+            return preg_match('/^required/', $rule);
+        });
+    }
+
+    protected function getBindKeys(string $str)
+    {
+        $matches = [];
+
+        preg_match_all(static::BIND_NAME_EXP, $str, $matches);
+
+        return $matches[1];
+    }
+
+    protected function getClosureDependencies(\Closure $func)
+    {
+        if (null == $func) {
+            return [];
+        }
+
+        $deps = [];
+        $params = (new \ReflectionFunction($func))->getParameters();
+
+        foreach ($params as $i => $param) {
+            $dep = $param->name;
+
+            if (!ctype_lower($dep)) {
+                $dep = preg_replace('/\s+/u', '', ucwords($dep));
+                $dep = preg_replace('/(.)(?=[A-Z])/u', '$1_', $dep);
+                $dep = mb_strtolower($dep, 'UTF-8');
+            }
+
+            $deps[] = $dep;
+        }
+
+        return $deps;
     }
 
     protected function getLoadedDataWith($key)
@@ -390,10 +541,10 @@ class Service
                     $v[2][$k] = $this->resolveBindName($name);
                 }
                 $service = static::initService($v);
-                $resolved = $service->run();
+                $resolved = $service->run(false);
             } elseif ($v instanceof self) {
                 $service = $v;
-                $resolved = $service->run();
+                $resolved = $service->run(false);
             } else {
                 $values[$i] = $v;
 
@@ -413,102 +564,10 @@ class Service
         }
 
         if (!$hasError) {
-            $data->offsetSet($key, $hasServicesInArray ? $values : $values[0]);
+            $this->data->offsetSet($key, $hasServicesInArray ? $values : $values[0]);
         }
 
-        return $data;
-    }
-
-    protected function getAvailableRuleLists($key, $data, $ruleLists)
-    {
-        if (!$data->offsetExists($key)) {
-            $ruleLists[$key] = array_filter($ruleLists[$key], function ($rule) {
-                return preg_match('/^required/', $rule);
-            });
-        }
-
-        if ($data->offsetExists($key) && array_key_exists($key.'.*', $ruleLists)) {
-            $this->names->offsetSet($key.'.*', $this->resolveBindName('{{'.$key.'.*}}'));
-            if (!in_array('array', array_key_exists($key, $ruleLists) ? $ruleLists[$key]: [])) {
-                throw new \Exception($key.' key must has array rule in '.static::class);
-            }
-
-            foreach (array_keys($this->toArray($data[$key])) as $i) {
-                $ruleLists[$key.'.'.$i] = $ruleLists[$key.'.*'];
-                $this->names->offsetSet(
-                    $key.'.'.$i,
-                    str_replace('*', $i, $this->names->offsetGet($key.'.*'))
-                );
-            }
-        }
-
-        if ($this->names->offsetExists($key.'.*')) {
-            unset($ruleLists[$key.'.*']);
-            $this->names->offsetUnset($key.'.*');
-        }
-
-        foreach ($ruleLists as $k => $ruleList) {
-            foreach ($ruleList as $i => $rule) {
-                $bindKeys = $this->getBindKeys($rule);
-
-                foreach ($bindKeys as $bindKey) {
-                    $this->names->offsetSet($bindKey, $this->resolveBindName('{{'.$bindKey.'}}'));
-
-                    if (!$this->validate($bindKey)) {
-                        $this->validations->offsetSet($key, false);
-                        unset($ruleList[$i]);
-
-                        continue;
-                    }
-
-                    if (!preg_match('/^required/', $rule) && !$this->getData()->offsetExists($bindKey)) {
-                        throw new \Exception('"'.$bindKey.'" key required rule not exists in '.static::class);
-                    }
-                }
-
-                $ruleList[$i] = preg_replace(static::BIND_NAME_EXP, '$1', $rule);
-            }
-            $ruleLists[$k] = $ruleList;
-
-            if (empty($ruleLists[$k])) {
-                unset($ruleLists[$k]);
-            }
-        }
-
-        return $ruleLists;
-    }
-
-    protected function getBindKeys(string $str)
-    {
-        $matches = [];
-
-        preg_match_all(static::BIND_NAME_EXP, $str, $matches);
-
-        return $matches[1];
-    }
-
-    protected function getClosureDependencies(\Closure $func)
-    {
-        if (null == $func) {
-            return [];
-        }
-
-        $deps = [];
-        $params = (new \ReflectionFunction($func))->getParameters();
-
-        foreach ($params as $i => $param) {
-            $dep = $param->name;
-
-            if (!ctype_lower($dep)) {
-                $dep = preg_replace('/\s+/u', '', ucwords($dep));
-                $dep = preg_replace('/(.)(?=[A-Z])/u', '$1_', $dep);
-                $dep = mb_strtolower($dep, 'UTF-8');
-            }
-
-            $deps[] = $dep;
-        }
-
-        return $deps;
+        return $this->data;
     }
 
     protected function getLocale()
@@ -518,6 +577,40 @@ class Service
         }
 
         return 'en';
+    }
+
+    protected function getMustPresentDependencyKeysInRuleLists($ruleLists)
+    {
+        $dependencies = [];
+        foreach ($ruleLists as $k => $ruleList) {
+            foreach ($ruleList as $i => $rule) {
+                $bindKeys = $this->getBindKeys($rule);
+                foreach ($bindKeys as $bindKey) {
+                    if (!preg_match('/^required/', $rule)) {
+                        $dependencies[] = $bindKey;
+                    }
+                }
+            }
+        }
+
+        return $dependencies;
+    }
+
+    protected function getNotMustPresentDependencyKeysInRuleLists($ruleLists)
+    {
+        $dependencies = [];
+        foreach ($ruleLists as $k => $ruleList) {
+            foreach ($ruleList as $i => $rule) {
+                $bindKeys = $this->getBindKeys($rule);
+                foreach ($bindKeys as $bindKey) {
+                    if (preg_match('/^required/', $rule)) {
+                        $dependencies[] = $bindKey;
+                    }
+                }
+            }
+        }
+
+        return $dependencies;
     }
 
     protected function getOrderedCallbackKeys($key)
@@ -532,6 +625,15 @@ class Service
         $restKeys = array_diff($allKeys, $orderedKeys);
 
         return array_merge($orderedKeys, $restKeys);
+    }
+
+    protected function getRelatedRuleLists($key, $class)
+    {
+        $ruleLists = $this->getAllRuleLists()->offsetExists($class) ? $this->getAllRuleLists()->getArrayCopy()[$class] : [];
+
+        return array_filter($ruleLists, function ($k) use ($key) {
+            return preg_match('/^'.$key.'$/', $k) || preg_match('/^'.$key.'\./', $k);
+        }, ARRAY_FILTER_USE_KEY);
     }
 
     protected function getShouldOrderedCallbackKeys($keys)
@@ -553,16 +655,13 @@ class Service
         return array_keys($rtn);
     }
 
-    protected function getValidationErrors($locale, $data, $ruleLists, $names)
+    protected function hasArrayObjectRuleInRuleList($ruleList)
     {
-        if (!empty(static::$validationErrorListResolver)) {
-            return (static::$validationErrorListResolver)($locale, $data, $ruleLists, $names);
+        if ($ruleList && in_array('array', $ruleList)) {
+            return true;
         }
 
-        $validator = Validator::newInstance($locale, $data, $ruleLists, $names);
-        $validator->passes();
-
-        return $validator->errors()->messages();
+        return false;
     }
 
     protected function isResolveError($value)
@@ -580,12 +679,11 @@ class Service
         $params = (new \ReflectionFunction($resolver))->getParameters();
 
         foreach ($depNames as $i => $depName) {
-            if ($this->data->offsetExists($depName)) {
+            if ($this->validations->offsetGet($depName) && $this->data->offsetExists($depName)) {
                 $depVals[] = $this->data->offsetGet($depName);
-            } elseif ($params[$i]->isDefaultValueAvailable()) {
+            } elseif ($this->validations->offsetGet($depName) && $params[$i]->isDefaultValueAvailable()) {
                 $depVals[] = $params[$i]->getDefaultValue();
             } else {
-                // must not throw exception, but only return
                 return $this->resolveError();
             }
         }
@@ -602,9 +700,10 @@ class Service
                 $this->getAllBindNames()->getArrayCopy(),
                 $this->names->getArrayCopy(),
             ));
-            $bindName = $bindNames->offsetExists($key) ? $bindNames->offsetGet($key) : null;
 
-            if (null == $bindName) {
+            if ($bindNames->offsetExists($key)) {
+                $bindName = $bindNames->offsetGet($key);
+            } else {
                 throw new \Exception('"'.$key.'" name not exists in '.static::class);
             }
 
@@ -620,7 +719,7 @@ class Service
         return new \Error('can\'t be resolve');
     }
 
-    protected function runDeferCallbacks()
+    protected function runAllDeferCallbacks()
     {
         $callbacks = array_filter($this->getAllCallbacks()->getArrayCopy(), function ($value) {
             return preg_match('/:defer$/', $value);
@@ -629,91 +728,74 @@ class Service
         foreach ($callbacks as $callback) {
             $this->resolve($callback);
         }
+
+        foreach ($this->childs as $child) {
+            $child->runAllDeferCallbacks();
+        }
     }
 
-    protected function validate($key)
+    protected function transformRuleLists($key, $data, $ruleLists)
     {
-        if (count(explode('.', $key)) > 1) {
-            $this->validate(explode('.', $key)[0]);
+        foreach ($ruleLists as $k => $ruleList) {
+            foreach ($ruleList as $i => $rule) {
+                $ruleList[$i] = preg_replace(static::BIND_NAME_EXP, '$1', $rule);
+            }
+            $ruleLists[$k] = $ruleList;
+        }
+
+        return $ruleLists;
+    }
+
+    protected function validate($key, $depth = null)
+    {
+        $depth = $depth ? $depth.'|'.$key : $key;
+        $depths = explode('|', $depth);
+        $mainKey = explode('.', $key)[0];
+
+        if (count(array_filter($depths, function ($seg) use ($key) {
+            return $seg == $key;
+        })) >= 2) {
+            throw new \Exception('validation dependency circular reference['.$depth.'] occurred in '.static::class);
         }
 
         if ($this->validations->offsetExists($key)) {
             return $this->validations->offsetGet($key);
         }
 
-        $promiseList = $this->getAllPromiseLists()->offsetExists($key) ? $this->getAllPromiseLists()->offsetGet($key) : [];
+        $promiseList = $this->getAllPromiseLists()->offsetExists($mainKey) ? $this->getAllPromiseLists()->offsetGet($mainKey) : [];
 
         foreach ($promiseList as $promise) {
-            if (!$this->validate($promise)) {
-                $this->validations->offsetSet($key, false);
+            if (!$this->validate($promise, $depth)) {
+                $this->validations->offsetSet($mainKey, false);
+
                 return false;
             }
         }
 
-        $loader = $this->getAllLoaders()->offsetExists($key) ? $this->getAllLoaders()->offsetGet($key) : null;
+        $loader = $this->getAllLoaders()->offsetExists($mainKey) ? $this->getAllLoaders()->offsetGet($mainKey) : null;
         $deps = $loader ? $this->getClosureDependencies($loader) : [];
 
         foreach ($deps as $dep) {
-            if (!$this->validate($dep)) {
-                $this->validations->offsetSet($key, false);
+            if (!$this->validate($dep, $depth)) {
+                $this->validations->offsetSet($mainKey, false);
             }
         }
 
-        if ($this->validations->offsetExists($key) && false === $this->validations->offsetGet($key)) {
+        if ($this->validations->offsetExists($mainKey) && false === $this->validations->offsetGet($mainKey)) {
+            $this->validations->offsetSet($key, false);
+
             return false;
         }
 
-        $ruleLists = array_filter($this->getAllRuleLists()->getArrayCopy(), function ($k) use ($key) {
-            return preg_match('/^'.$key.'[.]{0,1}/', $k);
-        }, ARRAY_FILTER_USE_KEY);
-
-        if (!empty($ruleLists[$key])) {
-            $this->names->offsetSet($key, $this->resolveBindName('{{'.$key.'}}'));
-        }
-
-        $data = $this->getLoadedDataWith($key);
-        $ruleLists = $this->getAvailableRuleLists($key, $data, $ruleLists);
-
-        foreach ($ruleLists as $ruleKey => $ruleList) {
-            $k = explode('.', $ruleKey)[0];
-            $locale = $this->getLocale();
-            $items = array_merge(
-                $this->data->getArrayCopy(),
-                $data->getArrayCopy()
-            );
-            if (array_key_exists($k, $items) && !empty($items[$k])) {
-                $item = $this->toArray($items[$k]);
-                if (is_null($item)) {
-                    throw new \Exception('data {'.$k.'} key can\'t convert primative value');
-                }
-                $items[$k] = $item;
-            }
-
-            $errorLists = $this->getValidationErrors(
-                $locale,
-                $items,
-                [$ruleKey => $ruleList],
-                $this->names->getArrayCopy()
-            );
-
-            if (!empty($errorLists)) {
-                $this->errors->offsetSet($ruleKey, $errorLists[$ruleKey]);
-                $this->validations->offsetSet($ruleKey, false);
-                $this->validations->offsetSet($key, false);
-
-                return false;
-            }
-        }
-
-        if ($this->validations->offsetExists($key) && false === $this->validations->offsetGet($key)) {
-            return false;
-        }
+        $data = $this->getLoadedDataWith($mainKey);
+        $items = json_decode(json_encode($data), true);
+        // ---------------------------------------
+        $this->validateWith($key, $items, $depth);
+        // ---------------------------------------
 
         if ($data->offsetExists($key)) {
             $this->data->offsetSet($key, $data->offsetGet($key));
         }
-
-        $this->validations->offsetSet($key, true);
 
         $orderedCallbackKeys = $this->getOrderedCallbackKeys($key);
 
@@ -722,7 +804,7 @@ class Service
             $deps = $this->getClosureDependencies($callback);
 
             foreach ($deps as $dep) {
-                if (!$this->validate($dep)) {
+                if (!$this->validate($dep, $depth)) {
                     $this->validations->offsetSet($key, false);
                 }
             }
@@ -739,14 +821,69 @@ class Service
         return true;
     }
 
-    private function toArray($value)
+    protected function validateWith($key, $items, $depth)
     {
-        if (is_object($value) && method_exists($value, 'toArray')) {
-            $result = $value->toArray();
-        } else {
-            $result = json_decode(json_encode($value), true);
+        foreach ([...static::getAllTraits(), static::class] as $class) {
+            $ruleLists = $this->getRelatedRuleLists($key, $class);
+            $mustPresentKeys = $this->getMustPresentDependencyKeysInRuleLists($ruleLists);
+            $notMustPresentKeys = $this->getNotMustPresentDependencyKeysInRuleLists($ruleLists);
+
+            foreach ([...$mustPresentKeys, ...$notMustPresentKeys] as $k) {
+                if (preg_match('/\.\*/', $k)) {
+                    throw new \Exception('wildcard(*) key can\'t exists in rule dependency in '.static::class);
+                }
+                if (!$this->validate($k, $depth)) {
+                    $this->validations->offsetSet($key, false);
+                }
+            }
+
+            foreach ($mustPresentKeys as $k) {
+                if (!$this->getData()->offsetExists($k)) {
+                    throw new \Exception('"'.$k.'" key required rule not exists in '.static::class);
+                }
+            }
+
+            $ruleLists = $this->transformRuleLists($key, $items, $ruleLists);
+            $ruleLists = $this->filterAvailableExpandedRuleLists($key, $items, $ruleLists);
+
+            foreach ($ruleLists as $ruleKey => $ruleList) {
+                $locale = $this->getLocale();
+                $items = array_merge($this->data->getArrayCopy(), $items);
+                $items = json_decode(json_encode($items), true);
+                $names = [];
+
+                foreach ($this->names as $k => $v) {
+                    $names[$k] = $this->resolveBindName($v);
+                }
+
+                $errorLists = $class::getValidationErrors(
+                    $locale,
+                    $items,
+                    [$ruleKey => $ruleList],
+                    $names,
+                );
+
+                if (!empty($errorLists)) {
+                    if (!$this->errors->offsetExists($ruleKey)) {
+                        $this->errors->offsetSet($ruleKey, []);
+                    }
+                    $this->errors->offsetSet($ruleKey, array_merge(
+                        $this->errors->offsetGet($ruleKey),
+                        $errorLists[$ruleKey],
+                    ));
+                    $this->validations->offsetSet($key, false);
+
+                    return false;
+                }
+            }
         }
 
-        return $result;
+        if ($this->validations->offsetExists($key) && false === $this->validations->offsetGet($key)) {
+            return false;
+        }
+
+        $this->validations->offsetSet($key, true);
+
+        return true;
     }
 }
