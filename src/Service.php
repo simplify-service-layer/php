@@ -218,15 +218,6 @@ class Service
         return [];
     }
 
-    public function getValidates()
-    {
-        $arr = $this->validations->getArrayCopy();
-
-        ksort($arr);
-
-        return new \ArrayObject($arr);
-    }
-
     public static function getValidationErrors($locale, $data, $ruleLists, $names)
     {
         if (!empty(static::$validationErrorListResolver)) {
@@ -237,6 +228,15 @@ class Service
         $validator->passes();
 
         return $validator->errors()->messages();
+    }
+
+    public function getValidations()
+    {
+        $arr = $this->validations->getArrayCopy();
+
+        ksort($arr);
+
+        return new \ArrayObject($arr);
     }
 
     public static function initService($value)
@@ -657,7 +657,7 @@ class Service
 
     protected function hasArrayObjectRuleInRuleList($ruleList)
     {
-        if ($ruleList && in_array('array', $ruleList)) {
+        if (!empty($ruleList) && in_array('array', $ruleList)) {
             return true;
         }
 
@@ -789,9 +789,8 @@ class Service
 
         $data = $this->getLoadedDataWith($mainKey);
         $items = json_decode(json_encode($data), true);
-        // ---------------------------------------
+
         $this->validateWith($key, $items, $depth);
-        // ---------------------------------------
 
         if ($data->offsetExists($key)) {
             $this->data->offsetSet($key, $data->offsetGet($key));
@@ -845,17 +844,15 @@ class Service
 
             $ruleLists = $this->transformRuleLists($key, $items, $ruleLists);
             $ruleLists = $this->filterAvailableExpandedRuleLists($key, $items, $ruleLists);
+            $locale = $this->getLocale();
+            $items = json_decode(json_encode((array) $this->data), true);
+            $names = [];
+
+            foreach ($this->names as $k => $v) {
+                $names[$k] = $this->resolveBindName($v);
+            }
 
             foreach ($ruleLists as $ruleKey => $ruleList) {
-                $locale = $this->getLocale();
-                $items = array_merge($this->data->getArrayCopy(), $items);
-                $items = json_decode(json_encode($items), true);
-                $names = [];
-
-                foreach ($this->names as $k => $v) {
-                    $names[$k] = $this->resolveBindName($v);
-                }
-
                 $errorLists = $class::getValidationErrors(
                     $locale,
                     $items,
