@@ -89,9 +89,16 @@ class Service
             }
         }
 
-        foreach ([...static::getAllTraits(), static::class] as $class) {
-            $arr = array_merge($arr, $class::getLoaders());
+        foreach (static::getTraits() as $class) {
+            foreach ($class::getAllLoaders() as $loaderKey => $loader) {
+                if (array_key_exists($loaderKey, $arr)) {
+                    throw new \Exception($loaderKey.' loader key is duplicated in traits in '.static::class);
+                }
+                $arr = array_merge($arr, [$loaderKey => $loader]);
+            }
         }
+
+        $arr = array_merge($arr, static::getLoaders());
 
         return new \ArrayObject($arr);
     }
