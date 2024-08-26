@@ -132,7 +132,8 @@ class ServiceTest extends TestCase
             }
         };
 
-        $value = $service->run();
+        $service->run();
+        $value = $service->getData()->offsetGet('result');
 
         $this->assertEquals($value, [
             'child result value',
@@ -203,7 +204,8 @@ class ServiceTest extends TestCase
             }
         };
 
-        $value = $service->run();
+        $service->run();
+        $value = $service->getData()->offsetGet('result');
 
         $this->assertEquals($value, 'child result value');
         $this->assertEquals($service->getErrors()->getArrayCopy(), []);

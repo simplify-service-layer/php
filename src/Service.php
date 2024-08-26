@@ -194,30 +194,6 @@ class Service
         return [];
     }
 
-    public function getResponseBody()
-    {
-        $totalErrors = $this->getTotalErrors();
-        $errors = [];
-
-        array_walk_recursive($totalErrors, function ($value) use (&$errors) {
-            $errors[] = $value;
-        });
-
-        $result = $this->getData()->offsetExists('result') ? $this->getData()->offsetGet('result') : null;
-
-        if (!empty(static::$responseResolver)) {
-            return (static::$responseResolver)($result, $errors);
-        }
-
-        if (!empty($errors)) {
-            return ['errors' => $errors];
-        }
-
-        return [
-            'result' => $result,
-        ];
-    }
-
     public static function getRuleLists()
     {
         return [];
@@ -330,15 +306,39 @@ class Service
             $this->isRun = true;
         }
 
-        if (empty($this->getTotalErrors()) && !$this->getData()->offsetExists('result')) {
+        $totalErrors = $this->getTotalErrors();
+
+        if (empty($totalErrors) && !$this->getData()->offsetExists('result')) {
             throw new \Exception('result data key is not exists in '.static::class);
         }
 
-        if (!empty($this->getTotalErrors())) {
-            return $this->resolveError();
+        if (!$isRoot) {
+            if (!empty($totalErrors)) {
+                return $this->resolveError();
+            }
+
+            return $this->getData()->offsetGet('result');
         }
 
-        return $this->getData()->offsetGet('result');
+        $errors = [];
+
+        array_walk_recursive($totalErrors, function ($value) use (&$errors) {
+            $errors[] = $value;
+        });
+
+        $result = $this->getData()->offsetExists('result') ? $this->getData()->offsetGet('result') : null;
+
+        if (!empty(static::$responseResolver)) {
+            return (static::$responseResolver)($result, $errors);
+        }
+
+        if (!empty($errors)) {
+            return ['errors' => $errors];
+        }
+
+        return [
+            'result' => $result,
+        ];
     }
 
     public static function setLocaleResolver(\Closure $resolver)
