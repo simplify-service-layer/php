@@ -361,8 +361,17 @@ class Service
         foreach (array_keys($ruleLists) as $k) {
             $segs = explode('.', $k);
             for ($i = 0; $i < count($segs) - 1; ++$i) {
+                $hasArrayObjectRule = false;
                 $parentKey = implode('.', array_slice($segs, 0, $i + 1));
-                if (!$this->hasArrayObjectRuleInRuleList(array_key_exists($parentKey, $ruleLists) ? $ruleLists[$parentKey] : null)) {
+                foreach (array_keys((array) $this->getAllRuleLists()) as $class) {
+                    $parentRuleLists = $this->getAllRuleLists()[$class];
+                    $parentRuleList = array_key_exists($parentKey, $parentRuleLists) ? $parentRuleLists[$parentKey] : [];
+                    if ($this->hasArrayObjectRuleInRuleList($parentRuleList)) {
+                        $hasArrayObjectRule = true;
+                    }
+                }
+
+                if (!$hasArrayObjectRule) {
                     throw new \Exception($parentKey.' key must has array rule in '.static::class);
                 }
             }
@@ -781,7 +790,7 @@ class Service
             }
         }
 
-        if ($this->validations->offsetExists($mainKey) && false === $this->validations->offsetGet($mainKey)) {
+        if ($this->validations->offsetExists($key) && false === $this->validations->offsetGet($key)) {
             $this->validations->offsetSet($key, false);
 
             return false;

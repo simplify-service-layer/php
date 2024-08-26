@@ -210,4 +210,46 @@ class ServiceTest extends TestCase
         $this->assertEquals($value, 'child result value');
         $this->assertEquals($service->getErrors()->getArrayCopy(), []);
     }
+
+    public function testWhenParentRuleIsInvaildAndChildRuleIsValid()
+    {
+        $service = new class() extends Service {
+            public static function getBindNames()
+            {
+                return [
+                    'result' => 'result name',
+                ];
+            }
+
+            public static function getLoaders()
+            {
+                return [
+                    'result' => function () {
+                        return [
+                            'a' => [],
+                            'b' => [
+                                'c' => 'ccc',
+                            ],
+                        ];
+                    },
+                ];
+            }
+
+            public static function getRuleLists()
+            {
+                return [
+                    'result' => ['array'],
+                    'result.a' => ['string'],
+                    'result.b' => ['array'],
+                ];
+            }
+        };
+
+        $service->run();
+
+        $this->assertFalse($service->getValidations()->offsetGet('result'));
+        $this->assertFalse($service->getValidations()->offsetGet('result.a'));
+        $this->assertTrue($service->getValidations()->offsetExists('result.b'));
+        $this->assertTrue($service->getValidations()->offsetGet('result.b'));
+    }
 }
