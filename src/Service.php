@@ -771,6 +771,16 @@ class Service
             return $this->validations->offsetGet($key);
         }
 
+        $keySegs = explode('.', $key);
+        for ($i = 0; $i < count($keySegs) - 1; ++$i) {
+            $parentKey = implode('.', array_slice($keySegs, 0, $i + 1));
+            if ($this->validations->offsetExists($parentKey) && true === $this->validations->offsetGet($parentKey)) {
+                $this->validations->offsetSet($key, true);
+
+                return true;
+            }
+        }
+
         $promiseList = $this->getAllPromiseLists()->offsetExists($mainKey) ? $this->getAllPromiseLists()->offsetGet($mainKey) : [];
 
         foreach ($promiseList as $promise) {
