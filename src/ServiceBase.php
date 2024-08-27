@@ -5,6 +5,12 @@ namespace FunctionalCoding;
 abstract class ServiceBase
 {
     public const BIND_NAME_EXP = '/\{\{([a-zA-Z][\w\.\*]+)\}\}/';
+    private static \Closure $localeResolver;
+    private static array $onFailCallbacks = [];
+    private static array $onStartCallbacks = [];
+    private static array $onSuccessCallbacks = [];
+    private static \Closure $responseResolver;
+    private static \Closure $validationErrorListResolver;
     protected \ArrayObject $childs;
     protected \ArrayObject $data;
     protected \ArrayObject $errors;
@@ -12,12 +18,22 @@ abstract class ServiceBase
     protected bool $isRun;
     protected \ArrayObject $names;
     protected \ArrayObject $validations;
-    private static \Closure $localeResolver;
-    private static array $onFailCallbacks = [];
-    private static array $onStartCallbacks = [];
-    private static array $onSuccessCallbacks = [];
-    private static \Closure $responseResolver;
-    private static \Closure $validationErrorListResolver;
+
+    abstract public static function getValidationErrors($locale, $data, $ruleLists, $names);
+
+    abstract protected function filterPresentRelatedRuleList($ruleList);
+
+    abstract protected function getLocale();
+
+    abstract protected function getMustPresentDependencyKeysInRuleLists($ruleLists);
+
+    abstract protected function getNotMustPresentDependencyKeysInRuleLists($ruleLists);
+
+    abstract protected function getResponseBody($result, $totalErrors);
+
+    abstract protected function hasArrayObjectRuleInRuleList($ruleList);
+
+    abstract protected function transformRuleLists($key, $data, $ruleLists);
 
     public function __construct(array $inputs = [], array $names = [])
     {
@@ -178,37 +194,9 @@ abstract class ServiceBase
         return [];
     }
 
-    public function getChilds()
-    {
-        return $this->childs;
-    }
-
-    public function getData()
-    {
-        $data = clone $this->data;
-
-        $data->ksort();
-
-        return $data;
-    }
-
-    public function getErrors()
-    {
-        return clone $this->errors;
-    }
-
     public static function getLoaders()
     {
         return [];
-    }
-
-    public function getNames()
-    {
-        $names = clone $this->names;
-
-        $names->ksort();
-
-        return $names;
     }
 
     public static function getPromiseLists()
@@ -221,34 +209,9 @@ abstract class ServiceBase
         return [];
     }
 
-    public function getTotalErrors()
-    {
-        $errors = $this->getErrors()->getArrayCopy();
-
-        foreach ($this->getChilds() as $k => $child) {
-            $childErrors = $child->getTotalErrors();
-            if (!empty($childErrors)) {
-                $errors[$k] = $child->getTotalErrors();
-            }
-        }
-
-        return $errors;
-    }
-
     public static function getTraits()
     {
         return [];
-    }
-
-    abstract public static function getValidationErrors($locale, $data, $ruleLists, $names);
-
-    public function getValidations()
-    {
-        $arr = $this->validations->getArrayCopy();
-
-        ksort($arr);
-
-        return new \ArrayObject($arr);
     }
 
     public static function initService($value)
@@ -269,14 +232,80 @@ abstract class ServiceBase
         return new $class($data, $names);
     }
 
-    public function inputs()
-    {
-        return clone $this->inputs;
-    }
-
     public static function isInitable($value)
     {
         return is_array($value) && array_key_exists(0, $value) && is_string($value[0]) && is_a($value[0], Service::class, true);
+    }
+
+    public static function setLocaleResolver(\Closure $resolver)
+    {
+        static::$localeResolver = $resolver;
+    }
+
+    public static function setResponseResolver(\Closure $resolver)
+    {
+        static::$responseResolver = $resolver;
+    }
+
+    public static function setValidationErrorListResolver(\Closure $resolver)
+    {
+        static::$validationErrorListResolver = $resolver;
+    }
+
+    public function getChilds()
+    {
+        return $this->childs;
+    }
+
+    public function getData()
+    {
+        $data = clone $this->data;
+
+        $data->ksort();
+
+        return $data;
+    }
+
+    public function getErrors()
+    {
+        return clone $this->errors;
+    }
+
+    public function getNames()
+    {
+        $names = clone $this->names;
+
+        $names->ksort();
+
+        return $names;
+    }
+
+    public function getTotalErrors()
+    {
+        $errors = $this->getErrors()->getArrayCopy();
+
+        foreach ($this->getChilds() as $k => $child) {
+            $childErrors = $child->getTotalErrors();
+            if (!empty($childErrors)) {
+                $errors[$k] = $child->getTotalErrors();
+            }
+        }
+
+        return $errors;
+    }
+
+    public function getValidations()
+    {
+        $arr = $this->validations->getArrayCopy();
+
+        ksort($arr);
+
+        return new \ArrayObject($arr);
+    }
+
+    public function inputs()
+    {
+        return clone $this->inputs;
     }
 
     public function run($isRoot = true)
@@ -335,21 +364,6 @@ abstract class ServiceBase
         $result = $this->getData()->offsetExists('result') ? $this->getData()->offsetGet('result') : null;
 
         return $this->getResponseBody($result, $totalErrors);
-    }
-
-    public static function setLocaleResolver(\Closure $resolver)
-    {
-        static::$localeResolver = $resolver;
-    }
-
-    public static function setResponseResolver(\Closure $resolver)
-    {
-        static::$responseResolver = $resolver;
-    }
-
-    public static function setValidationErrorListResolver(\Closure $resolver)
-    {
-        static::$validationErrorListResolver = $resolver;
     }
 
     protected function filterAvailableExpandedRuleLists($key, $data, $ruleLists)
@@ -460,8 +474,6 @@ abstract class ServiceBase
         return $ruleLists;
     }
 
-    abstract protected function filterPresentRelatedRuleList($ruleList);
-
     protected function getBindKeys(string $str)
     {
         $matches = [];
@@ -570,12 +582,6 @@ abstract class ServiceBase
         return $this->data;
     }
 
-    abstract protected function getLocale();
-
-    abstract protected function getMustPresentDependencyKeysInRuleLists($ruleLists);
-
-    abstract protected function getNotMustPresentDependencyKeysInRuleLists($ruleLists);
-
     protected function getOrderedCallbackKeys($key)
     {
         $promiseKeys = array_filter(array_keys($this->getAllPromiseLists()->getArrayCopy()), function ($value) use ($key) {
@@ -599,8 +605,6 @@ abstract class ServiceBase
         }, ARRAY_FILTER_USE_KEY);
     }
 
-    abstract protected function getResponseBody($result, $totalErrors);
-
     protected function getShouldOrderedCallbackKeys($keys)
     {
         $arr = [];
@@ -619,8 +623,6 @@ abstract class ServiceBase
 
         return array_keys($rtn);
     }
-
-    abstract protected function hasArrayObjectRuleInRuleList($ruleList);
 
     protected function isResolveError($value)
     {
@@ -691,8 +693,6 @@ abstract class ServiceBase
             $child->runAllDeferCallbacks();
         }
     }
-
-    abstract protected function transformRuleLists($key, $data, $ruleLists);
 
     protected function validate($key, $depth = null)
     {
