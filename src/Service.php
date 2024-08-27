@@ -86,7 +86,7 @@ class Service extends ServiceBase
         return false;
     }
 
-    protected function transformRuleLists($key, $data, $ruleLists)
+    protected function removeDependencySymbolInRuleLists($key, $data, $ruleLists)
     {
         foreach ($ruleLists as $k => $ruleList) {
             foreach ($ruleList as $i => $rule) {

@@ -31,7 +31,7 @@ abstract class ServiceBase
 
     abstract protected function hasArrayObjectRuleInRuleList($ruleList);
 
-    abstract protected function transformRuleLists($key, $data, $ruleLists);
+    abstract protected function removeDependencySymbolInRuleLists($key, $data, $ruleLists);
 
     public function __construct(array $inputs = [], array $names = [], Service $parent = null)
     {
@@ -788,7 +788,7 @@ abstract class ServiceBase
                 }
             }
 
-            $ruleLists = $this->transformRuleLists($key, $items, $ruleLists);
+            $ruleLists = $this->removeDependencySymbolInRuleLists($key, $items, $ruleLists);
             $ruleLists = $this->filterAvailableExpandedRuleLists($key, $items, $ruleLists);
             $locale = $this->getLocale();
             $items = json_decode(json_encode((array) $this->data), true);
