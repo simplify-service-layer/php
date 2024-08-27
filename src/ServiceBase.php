@@ -5,12 +5,9 @@ namespace FunctionalCoding;
 abstract class ServiceBase
 {
     public const BIND_NAME_EXP = '/\{\{([a-zA-Z][\w\.\*]+)\}\}/';
-    private static \Closure $localeResolver;
     private static array $onFailCallbacks = [];
     private static array $onStartCallbacks = [];
     private static array $onSuccessCallbacks = [];
-    private static \Closure $responseResolver;
-    private static \Closure $validationErrorListResolver;
     protected \ArrayObject $childs;
     protected \ArrayObject $data;
     protected \ArrayObject $errors;
@@ -235,21 +232,6 @@ abstract class ServiceBase
     public static function isInitable($value)
     {
         return is_array($value) && array_key_exists(0, $value) && is_string($value[0]) && is_a($value[0], Service::class, true);
-    }
-
-    public static function setLocaleResolver(\Closure $resolver)
-    {
-        static::$localeResolver = $resolver;
-    }
-
-    public static function setResponseResolver(\Closure $resolver)
-    {
-        static::$responseResolver = $resolver;
-    }
-
-    public static function setValidationErrorListResolver(\Closure $resolver)
-    {
-        static::$validationErrorListResolver = $resolver;
     }
 
     public function getChilds()
