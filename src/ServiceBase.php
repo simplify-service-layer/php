@@ -14,6 +14,7 @@ abstract class ServiceBase
     protected \ArrayObject $inputs;
     protected bool $isRun;
     protected \ArrayObject $names;
+    protected null|Service $parent;
     protected \ArrayObject $validations;
 
     abstract public static function getValidationErrors($locale, $data, $ruleLists, $names);
@@ -32,7 +33,7 @@ abstract class ServiceBase
 
     abstract protected function transformRuleLists($key, $data, $ruleLists);
 
-    public function __construct(array $inputs = [], array $names = [])
+    public function __construct(array $inputs = [], array $names = [], Service $parent = null)
     {
         $this->childs = new \ArrayObject();
         $this->data = new \ArrayObject();
@@ -41,6 +42,7 @@ abstract class ServiceBase
         $this->names = new \ArrayObject($names);
         $this->validations = new \ArrayObject();
         $this->isRun = false;
+        $this->parent = $parent;
 
         foreach (array_keys($inputs) as $inputKey) {
             if (!preg_match('/^[a-zA-Z][\w-]{0,}/', $inputKey)) {
@@ -219,6 +221,7 @@ abstract class ServiceBase
         $class = $value[0];
         $data = $value[1];
         $names = $value[2];
+        $parent = $value[3];
 
         foreach ($data as $key => $value) {
             if ('' === $value) {
@@ -226,7 +229,7 @@ abstract class ServiceBase
             }
         }
 
-        return new $class($data, $names);
+        return new $class($data, $names, $parent);
     }
 
     public static function isInitable($value)
@@ -290,10 +293,10 @@ abstract class ServiceBase
         return clone $this->inputs;
     }
 
-    public function run($isRoot = true)
+    public function run()
     {
         if (!$this->isRun) {
-            if ($isRoot) {
+            if (!$this->parent) {
                 foreach (static::$onStartCallbacks as $callback) {
                     $callback();
                 }
@@ -313,7 +316,7 @@ abstract class ServiceBase
                 $this->validate($key);
             }
 
-            if ($isRoot) {
+            if (!$this->parent) {
                 if (empty($this->getTotalErrors())) {
                     $this->runAllDeferCallbacks();
                     foreach (static::$onSuccessCallbacks as $callback) {
@@ -335,7 +338,7 @@ abstract class ServiceBase
             throw new \Exception('result data key is not exists in '.static::class);
         }
 
-        if (!$isRoot) {
+        if ($this->parent) {
             if (!empty($totalErrors)) {
                 return $this->resolveError();
             }
@@ -534,11 +537,13 @@ abstract class ServiceBase
                 foreach ($v[2] as $k => $name) {
                     $v[2][$k] = $this->resolveBindName($name);
                 }
+                $v[3] = $this;
+
                 $service = static::initService($v);
-                $resolved = $service->run(false);
+                $resolved = $service->run();
             } elseif ($v instanceof self) {
                 $service = $v;
-                $resolved = $service->run(false);
+                $resolved = $service->run();
             } else {
                 $values[$i] = $v;
 
