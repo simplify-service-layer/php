@@ -40,6 +40,10 @@ class Service
         foreach ($this->inputs as $key => $value) {
             $this->validate($key);
         }
+
+        // defined key validation
+        static::getAllCallbacks();
+        static::getAllLoaders();
     }
 
     public static function addOnFailCallback(\Closure $callback)
@@ -72,9 +76,22 @@ class Service
     {
         $arr = [];
 
-        foreach ([...static::getAllTraits(), static::class] as $class) {
-            $arr = array_merge($arr, $class::getCallbacks());
+        foreach (array_keys(static::getCallbacks()) as $key) {
+            if (!preg_match('/^[a-zA-Z][\w-]{0,}#[\w-]{1,}(|@defer)/', $key)) {
+                throw new \Exception($key.' callback key is not support pattern in '.static::class);
+            }
         }
+
+        foreach (static::getTraits() as $class) {
+            foreach ($class::getAllCallbacks() as $key => $callback) {
+                if (array_key_exists($key, $arr)) {
+                    throw new \Exception($key.' callback key is duplicated in traits in '.static::class);
+                }
+                $arr[$key] = $callback;
+            }
+        }
+
+        $arr = array_merge($arr, static::getCallbacks());
 
         return new \ArrayObject($arr);
     }
@@ -83,18 +100,18 @@ class Service
     {
         $arr = [];
 
-        foreach (array_keys(static::getLoaders()) as $loaderKey) {
-            if (!preg_match('/^[a-zA-Z][\w-]{0,}/', $loaderKey)) {
-                throw new \Exception($loaderKey.' loader key is not support pattern in '.static::class);
+        foreach (array_keys(static::getLoaders()) as $key) {
+            if (!preg_match('/^[a-zA-Z][\w-]{0,}/', $key)) {
+                throw new \Exception($key.' loader key is not support pattern in '.static::class);
             }
         }
 
         foreach (static::getTraits() as $class) {
-            foreach ($class::getAllLoaders() as $loaderKey => $loader) {
-                if (array_key_exists($loaderKey, $arr)) {
-                    throw new \Exception($loaderKey.' loader key is duplicated in traits in '.static::class);
+            foreach ($class::getAllLoaders() as $key => $loader) {
+                if (array_key_exists($key, $arr)) {
+                    throw new \Exception($key.' loader key is duplicated in traits in '.static::class);
                 }
-                $arr = array_merge($arr, [$loaderKey => $loader]);
+                $arr[$key] = $loader;
             }
         }
 
@@ -632,10 +649,10 @@ class Service
     protected function getOrderedCallbackKeys($key)
     {
         $promiseKeys = array_filter(array_keys($this->getAllPromiseLists()->getArrayCopy()), function ($value) use ($key) {
-            return preg_match('/^'.$key.'\\./', $value);
+            return preg_match('/^'.$key.'\\#/', $value);
         });
         $allKeys = array_filter(array_keys($this->getAllCallbacks()->getArrayCopy()), function ($value) use ($key) {
-            return preg_match('/^'.$key.'\\./', $value);
+            return preg_match('/^'.$key.'\\#/', $value);
         });
         $orderedKeys = $this->getShouldOrderedCallbackKeys($promiseKeys);
         $restKeys = array_diff($allKeys, $orderedKeys);
@@ -818,6 +835,7 @@ class Service
 
         $this->validateWith($key, $items, $depth);
 
+        // unnecessary because data is stored already.
         if ($data->offsetExists($key)) {
             $this->data->offsetSet($key, $data->offsetGet($key));
         }
@@ -834,7 +852,7 @@ class Service
                 }
             }
 
-            if (!preg_match('/:defer$/', $callbackKey)) {
+            if (!preg_match('/@defer$/', $callbackKey)) {
                 $this->resolve($callback);
             }
         }
