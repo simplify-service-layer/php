@@ -1,6 +1,6 @@
 <?php
 
-namespace FunctionalCoding\Tests\Validation;
+namespace SimplifyServiceLayer\Tests\Validation;
 
 /**
  * @internal

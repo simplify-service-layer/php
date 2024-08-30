@@ -1,6 +1,6 @@
 <?php
 
-namespace FunctionalCoding\Validation;
+namespace SimplifyServiceLayer\Validation;
 
 use Illuminate\Translation\ArrayLoader;
 use Illuminate\Translation\Translator;

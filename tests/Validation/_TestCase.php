@@ -1,9 +1,9 @@
 <?php
 
-namespace FunctionalCoding\Tests\Validation;
+namespace SimplifyServiceLayer\Tests\Validation;
 
-use FunctionalCoding\Validation\Validator;
 use PHPUnit\Framework\TestCase;
+use SimplifyServiceLayer\Validation\Validator;
 
 /**
  * @internal

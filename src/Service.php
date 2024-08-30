@@ -1,8 +1,8 @@
 <?php
 
-namespace FunctionalCoding;
+namespace SimplifyServiceLayer;
 
-use FunctionalCoding\Validation\Validator;
+use SimplifyServiceLayer\Validation\Validator;
 
 class Service extends ServiceBase
 {

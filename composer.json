@@ -1,9 +1,11 @@
 {
-    "name": "functional-coding/base",
+    "name": "simplify-service-layer/base",
+    "description": "base service to simplify service layer implement",
+    "license": "MIT",
     "autoload": {
         "psr-4": {
-            "FunctionalCoding\\": "src/",
-            "FunctionalCoding\\Tests\\": "tests/"
+            "SimplifyServiceLayer\\": "src/",
+            "SimplifyServiceLayer\\Tests\\": "tests/"
         }
     },
     "require": {

@@ -1,9 +1,9 @@
 <?php
 
-namespace FunctionalCoding\Tests;
+namespace SimplifyServiceLayer\Tests;
 
-use FunctionalCoding\Service;
 use PHPUnit\Framework\TestCase;
+use SimplifyServiceLayer\Service;
 
 /**
  * @internal
