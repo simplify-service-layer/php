@@ -14,50 +14,23 @@ class Service extends ServiceBase
         return $validator->errors()->messages();
     }
 
-    protected function filterPresentRelatedRuleList($ruleList)
+    protected function filterPresentRelatedRule($rule)
     {
-        return array_filter($ruleList, function ($rule) {
-            return preg_match('/^required/', $rule);
-        });
+        return preg_match('/^required/', $rule) ? $rule : null;
+    }
+
+    protected function getDependencyKeysInRule($rule)
+    {
+        $matches = [];
+
+        preg_match_all(static::BIND_NAME_EXP, $rule, $matches);
+
+        return $matches[1];
     }
 
     protected function getLocale()
     {
         return 'en';
-    }
-
-    protected function getMustPresentDependencyKeysInRuleLists($ruleLists)
-    {
-        $dependencies = [];
-        foreach ($ruleLists as $k => $ruleList) {
-            foreach ($ruleList as $i => $rule) {
-                $bindKeys = $this->getBindKeys($rule);
-                foreach ($bindKeys as $bindKey) {
-                    if (!preg_match('/^required/', $rule)) {
-                        $dependencies[] = $bindKey;
-                    }
-                }
-            }
-        }
-
-        return $dependencies;
-    }
-
-    protected function getNotMustPresentDependencyKeysInRuleLists($ruleLists)
-    {
-        $dependencies = [];
-        foreach ($ruleLists as $k => $ruleList) {
-            foreach ($ruleList as $i => $rule) {
-                $bindKeys = $this->getBindKeys($rule);
-                foreach ($bindKeys as $bindKey) {
-                    if (preg_match('/^required/', $rule)) {
-                        $dependencies[] = $bindKey;
-                    }
-                }
-            }
-        }
-
-        return $dependencies;
     }
 
     protected function getResponseBody($result, $totalErrors)
@@ -86,15 +59,8 @@ class Service extends ServiceBase
         return false;
     }
 
-    protected function removeDependencySymbolInRuleLists($key, $data, $ruleLists)
+    protected function removeDependencyKeySymbolInRule($rule)
     {
-        foreach ($ruleLists as $k => $ruleList) {
-            foreach ($ruleList as $i => $rule) {
-                $ruleList[$i] = preg_replace(static::BIND_NAME_EXP, '$1', $rule);
-            }
-            $ruleLists[$k] = $ruleList;
-        }
-
-        return $ruleLists;
+        return preg_replace(static::BIND_NAME_EXP, '$1', $rule);
     }
 }

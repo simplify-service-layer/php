@@ -14,26 +14,24 @@ abstract class ServiceBase
     protected \ArrayObject $inputs;
     protected bool $isRun;
     protected \ArrayObject $names;
-    protected null|Service $parent;
+    protected null|self $parent;
     protected \ArrayObject $validations;
 
     abstract public static function getValidationErrors($locale, $data, $ruleLists, $names);
 
-    abstract protected function filterPresentRelatedRuleList($ruleList);
+    abstract protected function filterPresentRelatedRule($rule);
+
+    abstract protected function getDependencyKeysInRule($rule);
 
     abstract protected function getLocale();
-
-    abstract protected function getMustPresentDependencyKeysInRuleLists($ruleLists);
-
-    abstract protected function getNotMustPresentDependencyKeysInRuleLists($ruleLists);
 
     abstract protected function getResponseBody($result, $totalErrors);
 
     abstract protected function hasArrayObjectRuleInRuleList($ruleList);
 
-    abstract protected function removeDependencySymbolInRuleLists($key, $data, $ruleLists);
+    abstract protected function removeDependencyKeySymbolInRule($rule);
 
-    public function __construct(array $inputs = [], array $names = [], Service $parent = null)
+    public function __construct(array $inputs = [], array $names = [], self $parent = null)
     {
         $this->childs = new \ArrayObject();
         $this->data = new \ArrayObject();
@@ -171,7 +169,7 @@ abstract class ServiceBase
         $arr = [];
 
         foreach (static::getTraits() as $class) {
-            if (!$class instanceof Service) {
+            if (!$class instanceof self) {
                 throw new \Exception('trait class must instanceof Service');
             }
             $arr = array_merge($arr, $class::getAllTraits()->getArrayCopy());
@@ -234,7 +232,7 @@ abstract class ServiceBase
 
     public static function isInitable($value)
     {
-        return is_array($value) && array_key_exists(0, $value) && is_string($value[0]) && is_a($value[0], Service::class, true);
+        return is_array($value) && array_key_exists(0, $value) && is_string($value[0]) && is_a($value[0], self::class, true);
     }
 
     public function getChilds()
@@ -429,7 +427,9 @@ abstract class ServiceBase
                 }
 
                 if (is_array($rKeyVal) && !array_key_exists($seg, $rKeyVal)) {
-                    $ruleLists[$k] = $this->filterPresentRelatedRuleList($ruleLists[$k]);
+                    $ruleLists[$k] = array_filter($ruleLists[$k], function ($rule) {
+                        return $this->filterPresentRelatedRule($rule);
+                    });
                 }
 
                 if (!is_array($rKeyVal) || ($k != $rKey && !array_key_exists($seg, $rKeyVal))) {
@@ -770,10 +770,26 @@ abstract class ServiceBase
     {
         foreach ([...static::getAllTraits(), static::class] as $class) {
             $ruleLists = $this->getRelatedRuleLists($key, $class);
-            $mustPresentKeys = $this->getMustPresentDependencyKeysInRuleLists($ruleLists);
-            $notMustPresentKeys = $this->getNotMustPresentDependencyKeysInRuleLists($ruleLists);
+            $allDepKeysInRule = [];
+            $notMustPresentDepKeysInRule = [];
+            foreach ($ruleLists as $k => $ruleList) {
+                foreach ($ruleList as $i => $rule) {
+                    $presentRelatedRule = $this->filterPresentRelatedRule($rule);
+                    if ($presentRelatedRule) {
+                        $notMustPresentDepKeysInRule = array_merge(
+                            $notMustPresentDepKeysInRule,
+                            $this->getDependencyKeysInRule($presentRelatedRule),
+                        );
+                    }
+                    $allDepKeysInRule = array_merge(
+                        $allDepKeysInRule,
+                        $this->getDependencyKeysInRule($rule),
+                    );
+                }
+            }
+            $mustPresentDepKeysInRule = array_diff($allDepKeysInRule, $notMustPresentDepKeysInRule);
 
-            foreach ([...$mustPresentKeys, ...$notMustPresentKeys] as $k) {
+            foreach (array_unique($allDepKeysInRule) as $k) {
                 if (preg_match('/\.\*/', $k)) {
                     throw new \Exception('wildcard(*) key can\'t exists in rule dependency in '.static::class);
                 }
@@ -782,13 +798,18 @@ abstract class ServiceBase
                 }
             }
 
-            foreach ($mustPresentKeys as $k) {
+            foreach (array_unique($mustPresentDepKeysInRule) as $k) {
                 if (!$this->getData()->offsetExists($k)) {
                     throw new \Exception('"'.$k.'" key required rule not exists in '.static::class);
                 }
             }
 
-            $ruleLists = $this->removeDependencySymbolInRuleLists($key, $items, $ruleLists);
+            foreach ($ruleLists as $k => $ruleList) {
+                foreach ($ruleList as $j => $rule) {
+                    $ruleLists[$k][$j] = $this->removeDependencyKeySymbolInRule($rule);
+                }
+            }
+
             $ruleLists = $this->filterAvailableExpandedRuleLists($key, $items, $ruleLists);
             $locale = $this->getLocale();
             $items = json_decode(json_encode((array) $this->data), true);
