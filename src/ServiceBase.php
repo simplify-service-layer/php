@@ -14,7 +14,7 @@ abstract class ServiceBase
     protected \ArrayObject $inputs;
     protected bool $isRun;
     protected \ArrayObject $names;
-    protected null|self $parent;
+    protected ?self $parent;
     protected \ArrayObject $validations;
 
     abstract public static function getValidationErrors($locale, $data, $ruleLists, $names);
@@ -31,7 +31,7 @@ abstract class ServiceBase
 
     abstract protected function removeDependencyKeySymbolInRule($rule);
 
-    public function __construct(array $inputs = [], array $names = [], self $parent = null)
+    public function __construct(array $inputs = [], array $names = [], ?self $parent = null)
     {
         $this->childs = new \ArrayObject();
         $this->data = new \ArrayObject();
@@ -459,7 +459,7 @@ abstract class ServiceBase
         return $ruleLists;
     }
 
-    protected function getBindKeys(string $str)
+    protected function getBindKeysInName(string $str)
     {
         $matches = [];
 
@@ -572,10 +572,10 @@ abstract class ServiceBase
     protected function getOrderedCallbackKeys($key)
     {
         $promiseKeys = array_filter(array_keys($this->getAllPromiseLists()->getArrayCopy()), function ($value) use ($key) {
-            return preg_match('/^'.$key.'\\#/', $value);
+            return preg_match('/^'.$key.'\#/', $value);
         });
         $allKeys = array_filter(array_keys($this->getAllCallbacks()->getArrayCopy()), function ($value) use ($key) {
-            return preg_match('/^'.$key.'\\#/', $value);
+            return preg_match('/^'.$key.'\#/', $value);
         });
         $orderedKeys = $this->getShouldOrderedCallbackKeys($promiseKeys);
         $restKeys = array_diff($allKeys, $orderedKeys);
@@ -640,7 +640,7 @@ abstract class ServiceBase
 
     protected function resolveBindName(string $name)
     {
-        while ($boundKeys = $this->getBindKeys($name)) {
+        while ($boundKeys = $this->getBindKeysInName($name)) {
             $key = $boundKeys[0];
             $pattern = '/\{\{'.$key.'\}\}/';
             $bindNames = new \ArrayObject(array_merge(
