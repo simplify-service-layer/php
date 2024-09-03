@@ -8,14 +8,14 @@ abstract class ServiceBase
     private static array $onFailCallbacks = [];
     private static array $onStartCallbacks = [];
     private static array $onSuccessCallbacks = [];
-    protected \ArrayObject $childs;
-    protected \ArrayObject $data;
-    protected \ArrayObject $errors;
-    protected \ArrayObject $inputs;
-    protected bool $isRun;
-    protected \ArrayObject $names;
-    protected ?self $parent;
-    protected \ArrayObject $validations;
+    private \ArrayObject $childs;
+    private \ArrayObject $data;
+    private \ArrayObject $errors;
+    private \ArrayObject $inputs;
+    private bool $isRun;
+    private \ArrayObject $names;
+    private ?self $parent;
+    private \ArrayObject $validations;
 
     abstract public static function getValidationErrors($locale, $data, $ruleLists, $names);
 
