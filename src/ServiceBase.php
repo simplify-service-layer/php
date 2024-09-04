@@ -254,6 +254,11 @@ abstract class ServiceBase
         return clone $this->errors;
     }
 
+    public function getInputs()
+    {
+        return clone $this->inputs;
+    }
+
     public function getNames()
     {
         $names = clone $this->names;
@@ -286,11 +291,6 @@ abstract class ServiceBase
         return new \ArrayObject($arr);
     }
 
-    public function inputs()
-    {
-        return clone $this->inputs;
-    }
-
     public function run()
     {
         if (!$this->isRun) {
@@ -300,7 +300,7 @@ abstract class ServiceBase
                 }
             }
 
-            foreach (array_keys((array) $this->inputs()) as $key) {
+            foreach (array_keys((array) $this->getInputs()) as $key) {
                 $this->validate($key);
             }
 
@@ -501,8 +501,8 @@ abstract class ServiceBase
             return $data;
         }
 
-        if ($this->inputs()->offsetExists($key)) {
-            $value = $this->inputs()->offsetGet($key);
+        if ($this->getInputs()->offsetExists($key)) {
+            $value = $this->getInputs()->offsetGet($key);
             $loader = function () use ($value) {
                 return $value;
             };
