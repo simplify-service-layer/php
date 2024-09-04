@@ -17,19 +17,19 @@ abstract class ServiceBase
     private ?self $parent;
     private \ArrayObject $validations;
 
+    abstract public static function filterPresentRelatedRule($rule);
+
+    abstract public static function getDependencyKeysInRule($rule);
+
+    abstract public static function getLocale();
+
     abstract public static function getValidationErrors($locale, $data, $ruleLists, $names);
 
-    abstract protected function filterPresentRelatedRule($rule);
+    abstract public static function hasArrayObjectRuleInRuleList($ruleList);
 
-    abstract protected function getDependencyKeysInRule($rule);
-
-    abstract protected function getLocale();
+    abstract public static function removeDependencyKeySymbolInRule($rule);
 
     abstract protected function getResponseBody($result, $totalErrors);
-
-    abstract protected function hasArrayObjectRuleInRuleList($ruleList);
-
-    abstract protected function removeDependencyKeySymbolInRule($rule);
 
     public function __construct(array $inputs = [], array $names = [], ?self $parent = null)
     {
@@ -349,7 +349,7 @@ abstract class ServiceBase
         return $this->getResponseBody($result, $totalErrors);
     }
 
-    protected function filterAvailableExpandedRuleLists($key, $data, $ruleLists)
+    protected function filterAvailableExpandedRuleLists($class, $key, $data, $ruleLists)
     {
         foreach (array_keys($ruleLists) as $k) {
             $segs = explode('.', $k);
@@ -359,7 +359,7 @@ abstract class ServiceBase
                 foreach (array_keys((array) $this->getAllRuleLists()) as $class) {
                     $parentRuleLists = $this->getAllRuleLists()[$class];
                     $parentRuleList = array_key_exists($parentKey, $parentRuleLists) ? $parentRuleLists[$parentKey] : [];
-                    if ($this->hasArrayObjectRuleInRuleList($parentRuleList)) {
+                    if ($class::hasArrayObjectRuleInRuleList($parentRuleList)) {
                         $hasArrayObjectRule = true;
                     }
                 }
@@ -427,8 +427,8 @@ abstract class ServiceBase
                 }
 
                 if (is_array($rKeyVal) && !array_key_exists($seg, $rKeyVal)) {
-                    $ruleLists[$k] = array_filter($ruleLists[$k], function ($rule) {
-                        return $this->filterPresentRelatedRule($rule);
+                    $ruleLists[$k] = array_filter($ruleLists[$k], function ($rule) use ($class) {
+                        return $class::filterPresentRelatedRule($rule);
                     });
                 }
 
@@ -774,16 +774,16 @@ abstract class ServiceBase
             $notMustPresentDepKeysInRule = [];
             foreach ($ruleLists as $k => $ruleList) {
                 foreach ($ruleList as $i => $rule) {
-                    $presentRelatedRule = $this->filterPresentRelatedRule($rule);
+                    $presentRelatedRule = $class::filterPresentRelatedRule($rule);
                     if ($presentRelatedRule) {
                         $notMustPresentDepKeysInRule = array_merge(
                             $notMustPresentDepKeysInRule,
-                            $this->getDependencyKeysInRule($presentRelatedRule),
+                            $class::getDependencyKeysInRule($presentRelatedRule),
                         );
                     }
                     $allDepKeysInRule = array_merge(
                         $allDepKeysInRule,
-                        $this->getDependencyKeysInRule($rule),
+                        $class::getDependencyKeysInRule($rule),
                     );
                 }
             }
@@ -806,12 +806,12 @@ abstract class ServiceBase
 
             foreach ($ruleLists as $k => $ruleList) {
                 foreach ($ruleList as $j => $rule) {
-                    $ruleLists[$k][$j] = $this->removeDependencyKeySymbolInRule($rule);
+                    $ruleLists[$k][$j] = $class::removeDependencyKeySymbolInRule($rule);
                 }
             }
 
-            $ruleLists = $this->filterAvailableExpandedRuleLists($key, $items, $ruleLists);
-            $locale = $this->getLocale();
+            $ruleLists = $this->filterAvailableExpandedRuleLists($class, $key, $items, $ruleLists);
+            $locale = $class::getLocale();
             $items = json_decode(json_encode((array) $this->data), true);
             $names = [];
 
