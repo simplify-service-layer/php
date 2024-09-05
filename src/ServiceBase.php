@@ -76,8 +76,8 @@ abstract class ServiceBase
     {
         $arr = [];
 
-        foreach ([...static::getAllTraits(), static::class] as $class) {
-            $arr = array_merge($arr, $class::getBindNames());
+        foreach ([...static::getAllTraits(), static::class] as $cls) {
+            $arr = array_merge($arr, $cls::getBindNames());
         }
 
         return new \ArrayObject($arr);
@@ -93,8 +93,8 @@ abstract class ServiceBase
             }
         }
 
-        foreach (static::getTraits() as $class) {
-            foreach ($class::getAllCallbacks() as $key => $callback) {
+        foreach (static::getTraits() as $cls) {
+            foreach ($cls::getAllCallbacks() as $key => $callback) {
                 if (array_key_exists($key, $arr)) {
                     throw new \Exception($key.' callback key is duplicated in traits in '.static::class);
                 }
@@ -117,8 +117,8 @@ abstract class ServiceBase
             }
         }
 
-        foreach (static::getTraits() as $class) {
-            foreach ($class::getAllLoaders() as $key => $loader) {
+        foreach (static::getTraits() as $cls) {
+            foreach ($cls::getAllLoaders() as $key => $loader) {
                 if (array_key_exists($key, $arr)) {
                     throw new \Exception($key.' loader key is duplicated in traits in '.static::class);
                 }
@@ -135,8 +135,8 @@ abstract class ServiceBase
     {
         $arr = [];
 
-        foreach ([...static::getAllTraits(), static::class] as $class) {
-            $arr = array_merge_recursive($arr, $class::getPromiseLists());
+        foreach ([...static::getAllTraits(), static::class] as $cls) {
+            $arr = array_merge_recursive($arr, $cls::getPromiseLists());
         }
 
         return new \ArrayObject($arr);
@@ -146,17 +146,17 @@ abstract class ServiceBase
     {
         $arr = [];
 
-        foreach ([...static::getAllTraits(), static::class] as $class) {
-            $arr[$class] = [];
-            foreach ($class::getRuleLists() as $key => $ruleList) {
+        foreach ([...static::getAllTraits(), static::class] as $cls) {
+            $arr[$cls] = [];
+            foreach ($cls::getRuleLists() as $key => $ruleList) {
                 if (!is_array($ruleList)) {
                     $ruleList = [$ruleList];
                 }
                 foreach ($ruleList as $rule) {
-                    if (!array_key_exists($key, $arr[$class])) {
-                        $arr[$class][$key] = [];
+                    if (!array_key_exists($key, $arr[$cls])) {
+                        $arr[$cls][$key] = [];
                     }
-                    array_push($arr[$class][$key], $rule);
+                    array_push($arr[$cls][$key], $rule);
                 }
             }
         }
@@ -168,11 +168,11 @@ abstract class ServiceBase
     {
         $arr = [];
 
-        foreach (static::getTraits() as $class) {
-            if (!$class instanceof self) {
+        foreach (static::getTraits() as $cls) {
+            if (!$cls instanceof self) {
                 throw new \Exception('trait class must instanceof Service');
             }
-            $arr = array_merge($arr, $class::getAllTraits()->getArrayCopy());
+            $arr = array_merge($arr, $cls::getAllTraits()->getArrayCopy());
         }
 
         $arr = array_merge($arr, static::getTraits());
@@ -216,7 +216,7 @@ abstract class ServiceBase
         isset($value[1]) ?: $value[1] = [];
         isset($value[2]) ?: $value[2] = [];
 
-        $class = $value[0];
+        $cls = $value[0];
         $data = $value[1];
         $names = $value[2];
         $parent = $value[3];
@@ -227,7 +227,7 @@ abstract class ServiceBase
             }
         }
 
-        return new $class($data, $names, $parent);
+        return new $cls($data, $names, $parent);
     }
 
     public static function isInitable($value)
@@ -304,8 +304,8 @@ abstract class ServiceBase
                 $this->validate($key);
             }
 
-            foreach (array_keys((array) $this->getAllRuleLists()) as $class) {
-                foreach (array_keys($this->getAllRuleLists()[$class]) as $key) {
+            foreach (array_keys((array) $this->getAllRuleLists()) as $cls) {
+                foreach (array_keys($this->getAllRuleLists()[$cls]) as $key) {
                     $this->validate($key);
                 }
             }
@@ -349,17 +349,17 @@ abstract class ServiceBase
         return $this->getResponseBody($result, $totalErrors);
     }
 
-    protected function filterAvailableExpandedRuleLists($class, $key, $data, $ruleLists)
+    protected function filterAvailableExpandedRuleLists($cls, $key, $data, $ruleLists)
     {
         foreach (array_keys($ruleLists) as $k) {
             $segs = explode('.', $k);
             for ($i = 0; $i < count($segs) - 1; ++$i) {
                 $hasArrayObjectRule = false;
                 $parentKey = implode('.', array_slice($segs, 0, $i + 1));
-                foreach (array_keys((array) $this->getAllRuleLists()) as $class) {
-                    $parentRuleLists = $this->getAllRuleLists()[$class];
+                foreach (array_keys((array) $this->getAllRuleLists()) as $cls) {
+                    $parentRuleLists = $this->getAllRuleLists()[$cls];
                     $parentRuleList = array_key_exists($parentKey, $parentRuleLists) ? $parentRuleLists[$parentKey] : [];
-                    if ($class::hasArrayObjectRuleInRuleList($parentRuleList)) {
+                    if ($cls::hasArrayObjectRuleInRuleList($parentRuleList)) {
                         $hasArrayObjectRule = true;
                     }
                 }
@@ -427,8 +427,8 @@ abstract class ServiceBase
                 }
 
                 if (is_array($rKeyVal) && !array_key_exists($seg, $rKeyVal)) {
-                    $ruleLists[$k] = array_filter($ruleLists[$k], function ($rule) use ($class) {
-                        return $class::filterPresentRelatedRule($rule);
+                    $ruleLists[$k] = array_filter($ruleLists[$k], function ($rule) use ($cls) {
+                        return $cls::filterPresentRelatedRule($rule);
                     });
                 }
 
@@ -583,9 +583,9 @@ abstract class ServiceBase
         return array_merge($orderedKeys, $restKeys);
     }
 
-    protected function getRelatedRuleLists($key, $class)
+    protected function getRelatedRuleLists($key, $cls)
     {
-        $ruleLists = $this->getAllRuleLists()->offsetExists($class) ? $this->getAllRuleLists()->getArrayCopy()[$class] : [];
+        $ruleLists = $this->getAllRuleLists()->offsetExists($cls) ? $this->getAllRuleLists()->getArrayCopy()[$cls] : [];
 
         return array_filter($ruleLists, function ($k) use ($key) {
             return preg_match('/^'.$key.'$/', $k) || preg_match('/^'.$key.'\./', $k);
@@ -768,22 +768,22 @@ abstract class ServiceBase
 
     protected function validateWith($key, $items, $depth)
     {
-        foreach ([...static::getAllTraits(), static::class] as $class) {
-            $ruleLists = $this->getRelatedRuleLists($key, $class);
+        foreach ([...static::getAllTraits(), static::class] as $cls) {
+            $ruleLists = $this->getRelatedRuleLists($key, $cls);
             $allDepKeysInRule = [];
             $notMustPresentDepKeysInRule = [];
             foreach ($ruleLists as $k => $ruleList) {
                 foreach ($ruleList as $i => $rule) {
-                    $presentRelatedRule = $class::filterPresentRelatedRule($rule);
+                    $presentRelatedRule = $cls::filterPresentRelatedRule($rule);
                     if ($presentRelatedRule) {
                         $notMustPresentDepKeysInRule = array_merge(
                             $notMustPresentDepKeysInRule,
-                            $class::getDependencyKeysInRule($presentRelatedRule),
+                            $cls::getDependencyKeysInRule($presentRelatedRule),
                         );
                     }
                     $allDepKeysInRule = array_merge(
                         $allDepKeysInRule,
-                        $class::getDependencyKeysInRule($rule),
+                        $cls::getDependencyKeysInRule($rule),
                     );
                 }
             }
@@ -806,12 +806,12 @@ abstract class ServiceBase
 
             foreach ($ruleLists as $k => $ruleList) {
                 foreach ($ruleList as $j => $rule) {
-                    $ruleLists[$k][$j] = $class::removeDependencyKeySymbolInRule($rule);
+                    $ruleLists[$k][$j] = $cls::removeDependencyKeySymbolInRule($rule);
                 }
             }
 
-            $ruleLists = $this->filterAvailableExpandedRuleLists($class, $key, $items, $ruleLists);
-            $locale = $class::getLocale();
+            $ruleLists = $this->filterAvailableExpandedRuleLists($cls, $key, $items, $ruleLists);
+            $locale = $cls::getLocale();
             $items = json_decode(json_encode((array) $this->data), true);
             $names = [];
 
@@ -820,7 +820,7 @@ abstract class ServiceBase
             }
 
             foreach ($ruleLists as $ruleKey => $ruleList) {
-                $errorLists = $class::getValidationErrors(
+                $errorLists = $cls::getValidationErrors(
                     $locale,
                     $items,
                     [$ruleKey => $ruleList],
