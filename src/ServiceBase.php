@@ -48,7 +48,7 @@ abstract class ServiceBase
             }
         }
 
-        foreach ($this->inputs as $key => $value) {
+        foreach (array_keys((array) $this->inputs) as $key) {
             $this->validate($key);
         }
 
@@ -152,10 +152,10 @@ abstract class ServiceBase
                 if (!is_array($ruleList)) {
                     $ruleList = [$ruleList];
                 }
+                if (!array_key_exists($key, $arr[$cls])) {
+                    $arr[$cls][$key] = [];
+                }
                 foreach ($ruleList as $rule) {
-                    if (!array_key_exists($key, $arr[$cls])) {
-                        $arr[$cls][$key] = [];
-                    }
                     array_push($arr[$cls][$key], $rule);
                 }
             }
@@ -170,7 +170,7 @@ abstract class ServiceBase
 
         foreach (static::getTraits() as $cls) {
             if (!$cls instanceof self) {
-                throw new \Exception('trait class must instanceof Service');
+                throw new \Exception('trait class must extends Service');
             }
             $arr = array_merge($arr, $cls::getAllTraits()->getArrayCopy());
         }
@@ -282,6 +282,8 @@ abstract class ServiceBase
 
     public function run()
     {
+        $totalErrors = $this->getTotalErrors();
+
         if (!$this->isRun) {
             if (!$this->parent) {
                 foreach (static::$onStartCallbacks as $callback) {
@@ -303,8 +305,10 @@ abstract class ServiceBase
                 $this->validate($key);
             }
 
+            $totalErrors = $this->getTotalErrors();
+
             if (!$this->parent) {
-                if (empty($this->getTotalErrors())) {
+                if (empty($totalErrors)) {
                     $this->runAllDeferCallbacks();
                     foreach (static::$onSuccessCallbacks as $callback) {
                         $callback();
@@ -318,8 +322,6 @@ abstract class ServiceBase
 
             $this->isRun = true;
         }
-
-        $totalErrors = $this->getTotalErrors();
 
         if (empty($totalErrors) && !$this->getData()->offsetExists('result')) {
             throw new \Exception('result data key is not exists in '.static::class);
@@ -423,7 +425,7 @@ abstract class ServiceBase
                     });
                 }
 
-                if (!is_array($rKeyVal) || ($k != $rKey && !array_key_exists($seg, $rKeyVal))) {
+                if (!is_array($rKeyVal) || (!empty($allSegs) && !array_key_exists($seg, $rKeyVal))) {
                     $this->validations->offsetSet($key, false);
                     $removeRuleLists = array_filter($ruleLists, function ($v) use ($k) {
                         return preg_match('/^'.$k.'\./', $v);
@@ -441,7 +443,7 @@ abstract class ServiceBase
                     break;
                 }
 
-                if ($k != $rKey) {
+                if (!empty($allSegs)) {
                     $rKeyVal = $rKeyVal[$seg];
                 }
             }
@@ -461,10 +463,6 @@ abstract class ServiceBase
 
     protected function getClosureDependencies(\Closure $func)
     {
-        if (null == $func) {
-            return [];
-        }
-
         $deps = [];
         $params = (new \ReflectionFunction($func))->getParameters();
 
@@ -521,6 +519,9 @@ abstract class ServiceBase
         $hasError = false;
 
         foreach ($values as $i => $v) {
+            $service = null;
+            $resolved = null;
+
             if (static::isInitable($v)) {
                 isset($v[1]) ?: $v[1] = [];
                 isset($v[2]) ?: $v[2] = [];
@@ -535,22 +536,20 @@ abstract class ServiceBase
             } elseif ($v instanceof self) {
                 $service = $v;
                 $resolved = $service->run();
-            } else {
-                $values[$i] = $v;
-
-                break;
             }
 
-            $this->childs->offsetSet($hasServicesInArray ? $key.'.'.$i : $key, $service);
+            if ($service) {
+                $this->childs->offsetSet($hasServicesInArray ? $key.'.'.$i : $key, $service);
 
-            if ($this->isResolveError($resolved)) {
-                unset($values[$i]);
-                $hasError = true;
+                if ($this->isResolveError($resolved)) {
+                    unset($values[$i]);
+                    $hasError = true;
 
-                $this->validations->offsetSet($key, false);
+                    $this->validations->offsetSet($key, false);
+                }
+
+                $values[$i] = $resolved;
             }
-
-            $values[$i] = $resolved;
         }
 
         if (!$hasError) {
@@ -586,20 +585,14 @@ abstract class ServiceBase
     protected function getShouldOrderedCallbackKeys($keys)
     {
         $arr = [];
-        $rtn = [];
 
         foreach ($keys as $key) {
             $deps = $this->getAllPromiseLists()->offsetExists($key) ? $this->getAllPromiseLists()->offsetGet($key) : [];
             $list = $this->getShouldOrderedCallbackKeys($deps);
-            $list = array_merge($list, [$key]);
-            $arr = array_merge($list, $arr);
+            $arr = [...$list, $key, ...$arr];
         }
 
-        foreach ($arr as $value) {
-            $rtn[$value] = null;
-        }
-
-        return array_keys($rtn);
+        return array_unique(array_values($arr));
     }
 
     protected function isResolveError($value)
@@ -672,7 +665,7 @@ abstract class ServiceBase
         }
     }
 
-    protected function validate($key, $depth = null)
+    protected function validate($key, $depth = '')
     {
         $depth = $depth ? $depth.'|'.$key : $key;
         $depths = explode('|', $depth);
@@ -717,12 +710,6 @@ abstract class ServiceBase
             }
         }
 
-        if ($this->validations->offsetExists($key) && false === $this->validations->offsetGet($key)) {
-            $this->validations->offsetSet($key, false);
-
-            return false;
-        }
-
         $data = $this->getLoadedDataWith($mainKey);
         $items = json_decode(json_encode($data), true);
 
@@ -763,6 +750,8 @@ abstract class ServiceBase
             $ruleLists = $this->getRelatedRuleLists($key, $cls);
             $allDepKeysInRule = [];
             $notMustPresentDepKeysInRule = [];
+            $mustPresentDepKeysInRule = [];
+
             foreach ($ruleLists as $k => $ruleList) {
                 foreach ($ruleList as $i => $rule) {
                     $presentRelatedRule = $cls::filterPresentRelatedRule($rule);
@@ -803,7 +792,6 @@ abstract class ServiceBase
 
             $ruleLists = $this->filterAvailableExpandedRuleLists($cls, $key, $items, $ruleLists);
             $locale = $cls::getLocale();
-            $items = json_decode(json_encode((array) $this->data), true);
             $names = [];
 
             foreach ($this->names as $k => $v) {
