@@ -237,16 +237,12 @@ abstract class ServiceBase
 
     public function getChilds()
     {
-        return $this->childs;
+        return clone $this->childs;
     }
 
     public function getData()
     {
-        $data = clone $this->data;
-
-        $data->ksort();
-
-        return $data;
+        return clone $this->data;
     }
 
     public function getErrors()
@@ -261,11 +257,7 @@ abstract class ServiceBase
 
     public function getNames()
     {
-        $names = clone $this->names;
-
-        $names->ksort();
-
-        return $names;
+        return clone $this->names;
     }
 
     public function getTotalErrors()
@@ -284,11 +276,7 @@ abstract class ServiceBase
 
     public function getValidations()
     {
-        $arr = $this->validations->getArrayCopy();
-
-        ksort($arr);
-
-        return new \ArrayObject($arr);
+        return clone $this->validations;
     }
 
     public function run()
