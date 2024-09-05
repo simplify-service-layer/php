@@ -215,6 +215,7 @@ abstract class ServiceBase
     {
         isset($value[1]) ?: $value[1] = [];
         isset($value[2]) ?: $value[2] = [];
+        isset($value[3]) ?: $value[3] = null;
 
         $cls = $value[0];
         $data = $value[1];
@@ -390,10 +391,12 @@ abstract class ServiceBase
 
                 if ($isSuccess) {
                     foreach ($rKeyVal as $k => $v) {
-                        $ruleLists[preg_replace('/^'.$allSegs.'\.\*/', $allSegs.'.'.$k, $rKey)] = $ruleLists[$rKey];
-                        $name = $this->resolveBindName('{{'.$rKey.'}}');
-                        $name = preg_replace('{{'.$i.'}}', $k, $name);
-                        $this->names->offsetSet($rKey, $name);
+                        $rNewKey = preg_replace('/^'.$allSegs.'\.\*/', $allSegs.'.'.$k, $rKey);
+                        $ruleLists[$rNewKey] = $ruleLists[$rKey];
+                        $this->names->offsetSet(
+                            $rNewKey,
+                            preg_replace('{{'.$i.'}}', $k, $this->resolveBindName('{{'.$rKey.'}}'))
+                        );
                     }
                     unset($ruleLists[$rKey]);
                     $this->names->offsetUnset($rKey);
