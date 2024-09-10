@@ -347,10 +347,9 @@ abstract class ServiceBase
             for ($i = 0; $i < count($segs) - 1; ++$i) {
                 $hasArrayObjectRule = false;
                 $parentKey = implode('.', array_slice($segs, 0, $i + 1));
-                foreach (array_keys((array) $this->getAllRuleLists()) as $cls) {
-                    $parentRuleLists = $this->getAllRuleLists()[$cls];
+                foreach ($this->getAllRuleLists() as $cl => $parentRuleLists) {
                     $parentRuleList = array_key_exists($parentKey, $parentRuleLists) ? $parentRuleLists[$parentKey] : [];
-                    if ($cls::hasArrayObjectRuleInRuleList($parentRuleList)) {
+                    if ($cl::hasArrayObjectRuleInRuleList($parentRuleList)) {
                         $hasArrayObjectRule = true;
                     }
                 }
@@ -362,15 +361,20 @@ abstract class ServiceBase
         }
 
         $i = 0;
-        while (!empty($filteredRuleLists = array_filter($ruleLists, function ($k) {
-            return preg_match('/\.\*$/', $k) || preg_match('/\.\*\./', $k);
-        }, ARRAY_FILTER_USE_KEY))) {
+        while (true) {
             ++$i;
+
+            $filteredRuleLists = array_filter($ruleLists, function ($k) {
+                return preg_match('/\.\*$/', $k) || preg_match('/\.\*\./', $k);
+            }, ARRAY_FILTER_USE_KEY);
+
+            if (empty($filteredRuleLists)) {
+                break;
+            }
             foreach (array_keys($filteredRuleLists) as $rKey) {
                 $matches = [];
                 preg_match('/^(.+?)\.\*/', $rKey, $matches);
-                $matches[1] = $matches[1].'.*';
-                $allSegs = explode('.', $matches[1]);
+                $allSegs = explode('.', $matches[1].'.*');
                 $segs = [];
                 $rKeyVal = $data;
                 $isSuccess = true;
@@ -397,7 +401,11 @@ abstract class ServiceBase
                         $ruleLists[$rNewKey] = $ruleLists[$rKey];
                         $this->names->offsetSet(
                             $rNewKey,
-                            preg_replace('{{'.$i.'}}', $k, $this->resolveBindName('{{'.$rKey.'}}'))
+                            preg_replace(
+                                '/\{\{(\s*)'.$i.'(\s*)\}\}/',
+                                $k,
+                                $this->resolveBindName('{{'.$rKey.'}}')
+                            )
                         );
                     }
                     unset($ruleLists[$rKey]);
@@ -626,7 +634,7 @@ abstract class ServiceBase
     {
         while ($boundKeys = $this->getBindKeysInName($name)) {
             $key = $boundKeys[0];
-            $pattern = '/\{\{'.$key.'\}\}/';
+            $pattern = '/\{\{(\s*)'.$key.'(\s*)\}\}/';
             $bindNames = new \ArrayObject(array_merge(
                 $this->getAllBindNames()->getArrayCopy(),
                 $this->names->getArrayCopy(),
