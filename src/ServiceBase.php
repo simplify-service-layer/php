@@ -340,7 +340,7 @@ abstract class ServiceBase
         return $this->getResponseBody($result, $totalErrors);
     }
 
-    protected function filterAvailableExpandedRuleLists($cls, $key, $data, $ruleLists)
+    private function filterAvailableExpandedRuleLists($cls, $key, $data, $ruleLists)
     {
         foreach (array_keys($ruleLists) as $k) {
             $segs = explode('.', $k);
@@ -452,7 +452,7 @@ abstract class ServiceBase
         return $ruleLists;
     }
 
-    protected function getBindKeysInName(string $str)
+    private function getBindKeysInName(string $str)
     {
         $matches = [];
 
@@ -461,7 +461,7 @@ abstract class ServiceBase
         return $matches[1];
     }
 
-    protected function getClosureDependencies(\Closure $func)
+    private function getClosureDependencies(\Closure $func)
     {
         $deps = [];
         $params = (new \ReflectionFunction($func))->getParameters();
@@ -481,7 +481,7 @@ abstract class ServiceBase
         return $deps;
     }
 
-    protected function getLoadedDataWith($key)
+    private function getLoadedDataWith($key)
     {
         $data = $this->getData();
         $loader = $this->getAllLoaders()->offsetExists($key) ? $this->getAllLoaders()->offsetGet($key) : null;
@@ -559,7 +559,7 @@ abstract class ServiceBase
         return $this->data;
     }
 
-    protected function getOrderedCallbackKeys($key)
+    private function getOrderedCallbackKeys($key)
     {
         $promiseKeys = array_filter(array_keys($this->getAllPromiseLists()->getArrayCopy()), function ($value) use ($key) {
             return preg_match('/^'.$key.'\#/', $value);
@@ -573,7 +573,7 @@ abstract class ServiceBase
         return array_merge($orderedKeys, $restKeys);
     }
 
-    protected function getRelatedRuleLists($key, $cls)
+    private function getRelatedRuleLists($key, $cls)
     {
         $ruleLists = $this->getAllRuleLists()->offsetExists($cls) ? $this->getAllRuleLists()->getArrayCopy()[$cls] : [];
 
@@ -582,7 +582,7 @@ abstract class ServiceBase
         }, ARRAY_FILTER_USE_KEY);
     }
 
-    protected function getShouldOrderedCallbackKeys($keys)
+    private function getShouldOrderedCallbackKeys($keys)
     {
         $arr = [];
 
@@ -595,14 +595,14 @@ abstract class ServiceBase
         return array_unique(array_values($arr));
     }
 
-    protected function isResolveError($value)
+    private function isResolveError($value)
     {
         $errorClass = get_class($this->resolveError());
 
         return is_object($value) && $value instanceof $errorClass;
     }
 
-    protected function resolve($func)
+    private function resolve($func)
     {
         $resolver = \Closure::bind($func, $this);
         $depNames = $this->getClosureDependencies($func);
@@ -622,7 +622,7 @@ abstract class ServiceBase
         return call_user_func_array($resolver, $depVals);
     }
 
-    protected function resolveBindName(string $name)
+    private function resolveBindName(string $name)
     {
         while ($boundKeys = $this->getBindKeysInName($name)) {
             $key = $boundKeys[0];
@@ -645,12 +645,12 @@ abstract class ServiceBase
         return $name;
     }
 
-    protected function resolveError()
+    private function resolveError()
     {
         return new \Error('can\'t be resolve');
     }
 
-    protected function runAllDeferCallbacks()
+    private function runAllDeferCallbacks()
     {
         $callbacks = array_filter($this->getAllCallbacks()->getArrayCopy(), function ($value) {
             return preg_match('/:defer$/', $value);
@@ -665,7 +665,7 @@ abstract class ServiceBase
         }
     }
 
-    protected function validate($key, $depth = '')
+    private function validate($key, $depth = '')
     {
         $depth = $depth ? $depth.'|'.$key : $key;
         $depths = explode('|', $depth);
@@ -744,7 +744,7 @@ abstract class ServiceBase
         return true;
     }
 
-    protected function validateWith($key, $items, $depth)
+    private function validateWith($key, $items, $depth)
     {
         foreach ([...static::getAllTraits(), static::class] as $cls) {
             $ruleLists = $this->getRelatedRuleLists($key, $cls);
