@@ -229,7 +229,7 @@ class ServiceTest extends TestCase
 
     public function testLoadName()
     {
-        $service = new class(['result' => 'result value'], ['result' => 'result name']) extends Service {
+        $service = new class([], ['result' => 'result name']) extends Service {
             public static function getBindNames()
             {
                 return [];
@@ -250,6 +250,34 @@ class ServiceTest extends TestCase
 
         $service->run();
 
-        $this->assertEquals($service->getErrors()->getArrayCopy(), []);
+        $this->assertNotEquals($service->getErrors()->getArrayCopy(), []);
+        $this->assertStringContainsString('result name', $service->getErrors()->getArrayCopy()['result'][0]);
+    }
+
+    public function testLoadNameNested()
+    {
+        $service = new class([], ['result' => '{{abcd}}', 'aaa' => 'aaaa', 'abcd' => '{{aaa}} bbb ccc ddd']) extends Service {
+            public static function getBindNames()
+            {
+                return [];
+            }
+
+            public static function getLoaders()
+            {
+                return [];
+            }
+
+            public static function getRuleLists()
+            {
+                return [
+                    'result' => ['required'],
+                ];
+            }
+        };
+
+        $service->run();
+
+        $this->assertNotEquals($service->getErrors()->getArrayCopy(), []);
+        $this->assertStringContainsString('aaaa bbb ccc ddd', $service->getErrors()->getArrayCopy()['result'][0]);
     }
 }
