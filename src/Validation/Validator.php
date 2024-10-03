@@ -25,12 +25,10 @@ class Validator extends \Illuminate\Validation\Validator
         ]);
     }
 
-    public static function newInstance($locale, $data, $ruleLists, $names)
+    public static function newInstance($data, $ruleLists, $names, $messages)
     {
-        $messages = include __DIR__.DIRECTORY_SEPARATOR.'lang'.DIRECTORY_SEPARATOR.$locale.'.php';
-
         $validator = new static(
-            new Translator(new ArrayLoader(), 'en'),
+            new Translator(new ArrayLoader(), ''),
             $data,
             $ruleLists,
             $messages,

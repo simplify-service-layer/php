@@ -12,9 +12,10 @@ use SimplifyServiceLayer\Validation\Validator;
  */
 class _TestCase extends TestCase
 {
-    protected function getValidationErrorLists(array $data = [], array $ruleLists = [], array $names = [], $locale = 'en')
+    protected function getValidationErrorLists(array $data = [], array $ruleLists = [], array $names = [])
     {
-        $validator = Validator::newInstance($locale, $data, $ruleLists, $names);
+        $messages = [];
+        $validator = Validator::newInstance($data, $ruleLists, $names, $messages);
         $validator->passes();
 
         return $validator->errors();

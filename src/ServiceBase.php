@@ -21,9 +21,9 @@ abstract class ServiceBase
 
     abstract public static function getDependencyKeysInRule($rule);
 
-    abstract public static function getLocale();
+    abstract public static function getValidationErrors($data, $ruleLists, $names, $messages);
 
-    abstract public static function getValidationErrors($locale, $data, $ruleLists, $names);
+    abstract public static function getValidationErrorTemplateMessages();
 
     abstract public static function hasArrayObjectRuleInRuleList($ruleList);
 
@@ -799,7 +799,7 @@ abstract class ServiceBase
             }
 
             $ruleLists = $this->filterAvailableExpandedRuleLists($cls, $key, $items, $ruleLists);
-            $locale = $cls::getLocale();
+            $messages = $cls::getValidationErrorTemplateMessages();
             $names = [];
 
             foreach ($this->names as $k => $v) {
@@ -808,10 +808,10 @@ abstract class ServiceBase
 
             foreach ($ruleLists as $ruleKey => $ruleList) {
                 $errorLists = $cls::getValidationErrors(
-                    $locale,
                     $items,
                     [$ruleKey => $ruleList],
                     $names,
+                    $messages,
                 );
 
                 if (!empty($errorLists)) {

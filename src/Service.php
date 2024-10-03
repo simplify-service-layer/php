@@ -20,17 +20,20 @@ class Service extends ServiceBase
         return $matches[1];
     }
 
-    public static function getLocale()
+    public static function getValidationErrors($data, $ruleLists, $names, $messages)
     {
-        return 'en';
-    }
-
-    public static function getValidationErrors($locale, $data, $ruleLists, $names)
-    {
-        $validator = Validator::newInstance($locale, $data, $ruleLists, $names);
+        $validator = Validator::newInstance($data, $ruleLists, $names, $messages);
         $validator->passes();
 
         return $validator->errors()->messages();
+    }
+
+    public static function getValidationErrorTemplateMessages()
+    {
+        $locale = 'en';
+        $messages = include __DIR__.DIRECTORY_SEPARATOR.'Validation'.DIRECTORY_SEPARATOR.'lang'.DIRECTORY_SEPARATOR.$locale.'.php';
+
+        return $messages;
     }
 
     public static function hasArrayObjectRuleInRuleList($ruleList)
