@@ -169,7 +169,7 @@ abstract class ServiceBase
         $arr = [];
 
         foreach (static::getTraits() as $cls) {
-            if (!$cls instanceof self) {
+            if (!static::isServiceClass($cls)) {
                 throw new \Exception('trait class must extends Service');
             }
             $arr = array_merge($arr, $cls::getAllTraits()->getArrayCopy());
@@ -233,7 +233,12 @@ abstract class ServiceBase
 
     public static function isInitable($value)
     {
-        return is_array($value) && array_key_exists(0, $value) && is_string($value[0]) && is_a($value[0], self::class, true);
+        return is_array($value) && array_key_exists(0, $value) && is_string($value[0]) && static::isServiceClass($value[0]);
+    }
+
+    public static function isServiceClass($value)
+    {
+        return is_a($value, self::class, true);
     }
 
     public function getChilds()
