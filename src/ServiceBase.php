@@ -505,16 +505,12 @@ abstract class ServiceBase
 
         if ($this->getInputs()->offsetExists($key)) {
             $value = $this->getInputs()->offsetGet($key);
-            $loader = function () use ($value) {
-                return $value;
-            };
+        } else {
+            if (empty($loader)) {
+                return $data;
+            }
+            $value = $this->resolve($loader);
         }
-
-        if (empty($loader)) {
-            return $data;
-        }
-
-        $value = $this->resolve($loader);
 
         if ($this->isResolveError($value)) {
             return $data;
@@ -807,8 +803,12 @@ abstract class ServiceBase
             $messages = $cls::getValidationErrorTemplateMessages();
             $names = [];
 
-            foreach ($this->names as $k => $v) {
-                $names[$k] = $this->resolveBindName($v);
+            foreach (array_keys((array) $this->names) as $k) {
+                $names[$k] = $this->resolveBindName('{{'.$k.'}}');
+            }
+
+            foreach (array_keys((array) $ruleLists) as $k) {
+                $names[$k] = $this->resolveBindName('{{'.$k.'}}');
             }
 
             foreach ($ruleLists as $ruleKey => $ruleList) {
