@@ -42,7 +42,7 @@ class ServiceTest extends TestCase
 
     public function testLoadDataFromInputChildBatchService()
     {
-        $service = new class extends Service {
+        $childService = new class extends Service {
             public static function getLoaders()
             {
                 return [
@@ -53,7 +53,7 @@ class ServiceTest extends TestCase
             }
         };
 
-        $service = new class(['result' => [[get_class($service)], [get_class($service)]]], []) extends Service {
+        $service = new class(['result' => [[get_class($childService)], [get_class($childService)]]], []) extends Service {
             public static function getBindNames()
             {
                 return [
@@ -127,7 +127,7 @@ class ServiceTest extends TestCase
 
     public function testLoadDataFromLoader()
     {
-        $service = new class extends Service {
+        $service1 = new class extends Service {
             public static function getBindNames()
             {
                 return [
@@ -151,11 +151,11 @@ class ServiceTest extends TestCase
                 ];
             }
         };
-        $service->run();
+        $service1->run();
 
-        $this->assertEquals($service->getErrors()->getArrayCopy(), []);
+        $this->assertEquals($service1->getErrors()->getArrayCopy(), []);
 
-        $service = new class extends Service {
+        $service2 = new class extends Service {
             public static function getBindNames()
             {
                 return [
@@ -180,9 +180,9 @@ class ServiceTest extends TestCase
             }
         };
 
-        $service->run();
+        $service2->run();
 
-        $this->assertNotEquals($service->getErrors()->getArrayCopy(), []);
+        $this->assertNotEquals($service2->getErrors()->getArrayCopy(), []);
     }
 
     public function testLoadDataKeyParentInvaildAndChildValid()
@@ -192,6 +192,8 @@ class ServiceTest extends TestCase
             {
                 return [
                     'result' => 'result name',
+                    'result.a' => 'result.a name',
+                    'result.b' => 'result.b name',
                 ];
             }
 
@@ -223,7 +225,6 @@ class ServiceTest extends TestCase
 
         $this->assertFalse($service->getValidations()->offsetGet('result'));
         $this->assertFalse($service->getValidations()->offsetGet('result.a'));
-        $this->assertTrue($service->getValidations()->offsetExists('result.b'));
         $this->assertTrue($service->getValidations()->offsetGet('result.b'));
     }
 
