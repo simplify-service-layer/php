@@ -381,8 +381,8 @@ abstract class ServiceBase
                 preg_match('/^(.+?)\.\*/', $rKey, $matches);
                 $allSegs = explode('.', $matches[1].'.*');
                 $segs = [];
-                $rKeyVal = $data;
-                $isSuccess = true;
+                $rKeyVal = (array) $data;
+                $isLastKeyExists = true;
 
                 while ($allSegs) {
                     $seg = array_shift($allSegs);
@@ -390,7 +390,7 @@ abstract class ServiceBase
                     $k = implode('.', $segs);
 
                     if (!is_array($rKeyVal) || (!empty($allSegs) && !array_key_exists($seg, $rKeyVal))) {
-                        $isSuccess = false;
+                        $isLastKeyExists = false;
 
                         break;
                     }
@@ -400,9 +400,9 @@ abstract class ServiceBase
                     }
                 }
 
-                if ($isSuccess) {
+                if ($isLastKeyExists) {
                     foreach ($rKeyVal as $k => $v) {
-                        $rNewKey = preg_replace('/^'.$allSegs.'\.\*/', $allSegs.'.'.$k, $rKey);
+                        $rNewKey = preg_replace('/^'.$matches[1].'\.\*/', $matches[1].'.'.$k, $rKey);
                         $ruleLists[$rNewKey] = $ruleLists[$rKey];
                         $this->names->offsetSet(
                             $rNewKey,
@@ -413,16 +413,16 @@ abstract class ServiceBase
                             )
                         );
                     }
-                    unset($ruleLists[$rKey]);
-                    $this->names->offsetUnset($rKey);
                 }
+                unset($ruleLists[$rKey]);
+                $this->names->offsetExists($rKey) ? $this->names->offsetUnset($rKey) : null;
             }
         }
 
         foreach (array_keys($ruleLists) as $rKey) {
             $allSegs = explode('.', $rKey);
             $segs = [];
-            $rKeyVal = $data;
+            $rKeyVal = (array) $data;
             while ($allSegs) {
                 $seg = array_shift($allSegs);
                 $segs[] = $seg;
@@ -439,7 +439,6 @@ abstract class ServiceBase
                 }
 
                 if (!is_array($rKeyVal) || (!empty($allSegs) && !array_key_exists($seg, $rKeyVal))) {
-                    $this->validations->offsetSet($key, false);
                     $removeRuleLists = array_filter($ruleLists, function ($v) use ($k) {
                         return preg_match('/^'.$k.'\./', $v);
                     }, ARRAY_FILTER_USE_KEY);
@@ -757,39 +756,21 @@ abstract class ServiceBase
     {
         foreach ([...static::getAllTraits(), static::class] as $cls) {
             $ruleLists = $this->getRelatedRuleLists($key, $cls);
-            $allDepKeysInRule = [];
-            $notMustPresentDepKeysInRule = [];
-            $mustPresentDepKeysInRule = [];
+            $ruleLists = $this->filterAvailableExpandedRuleLists($cls, $key, $items, $ruleLists);
 
             foreach ($ruleLists as $k => $ruleList) {
-                foreach ($ruleList as $i => $rule) {
-                    $presentRelatedRule = $cls::filterPresentRelatedRule($rule);
-                    if ($presentRelatedRule) {
-                        $notMustPresentDepKeysInRule = array_merge(
-                            $notMustPresentDepKeysInRule,
-                            $cls::getDependencyKeysInRule($presentRelatedRule),
-                        );
+                foreach ($ruleList as $j => $rule) {
+                    $depKeysInRule = $cls::getDependencyKeysInRule($rule);
+                    foreach ($depKeysInRule as $depKey) {
+                        if (preg_match('/\.\*/', $depKey)) {
+                            throw new \Exception('wildcard(*) key can\'t exists in rule dependency in '.$cls);
+                        }
+
+                        if (!$this->validate($depKey, $depth)) {
+                            $this->validations->offsetSet($key, false);
+                            unset($ruleLists[$k][$j]);
+                        }
                     }
-                    $allDepKeysInRule = array_merge(
-                        $allDepKeysInRule,
-                        $cls::getDependencyKeysInRule($rule),
-                    );
-                }
-            }
-            $mustPresentDepKeysInRule = array_diff($allDepKeysInRule, $notMustPresentDepKeysInRule);
-
-            foreach (array_unique($allDepKeysInRule) as $k) {
-                if (preg_match('/\.\*/', $k)) {
-                    throw new \Exception('wildcard(*) key can\'t exists in rule dependency in '.static::class);
-                }
-                if (!$this->validate($k, $depth)) {
-                    $this->validations->offsetSet($key, false);
-                }
-            }
-
-            foreach (array_unique($mustPresentDepKeysInRule) as $k) {
-                if (!$this->getData()->offsetExists($k)) {
-                    throw new \Exception('"'.$k.'" key required rule not exists in '.static::class);
                 }
             }
 
@@ -799,7 +780,6 @@ abstract class ServiceBase
                 }
             }
 
-            $ruleLists = $this->filterAvailableExpandedRuleLists($cls, $key, $items, $ruleLists);
             $messages = $cls::getValidationErrorTemplateMessages();
             $names = [];
 
