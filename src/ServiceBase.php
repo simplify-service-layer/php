@@ -77,7 +77,13 @@ abstract class ServiceBase
         $arr = [];
 
         foreach ([...static::getAllTraits(), static::class] as $cls) {
-            $arr = array_merge($arr, $cls::getBindNames());
+            $bindNames = $cls::getBindNames();
+            $arr = array_merge($arr, $bindNames);
+            foreach ($bindNames as $k => $v) {
+                if (count(explode('.', $k)) > 1) {
+                    throw new \Exception('including "." nested key '.$k.' cannot be existed in '.$cls);
+                }
+            }
         }
 
         return new \ArrayObject($arr);
@@ -350,17 +356,11 @@ abstract class ServiceBase
         foreach (array_keys($ruleLists) as $k) {
             $segs = explode('.', $k);
             for ($i = 0; $i < count($segs) - 1; ++$i) {
-                $hasArrayObjectRule = false;
                 $parentKey = implode('.', array_slice($segs, 0, $i + 1));
-                foreach ($this->getAllRuleLists() as $cl => $parentRuleLists) {
-                    $parentRuleList = array_key_exists($parentKey, $parentRuleLists) ? $parentRuleLists[$parentKey] : [];
-                    if ($cl::hasArrayObjectRuleInRuleList($parentRuleList)) {
-                        $hasArrayObjectRule = true;
-                    }
-                }
+                $hasArrayObjectRule = $this->hasArrayObjectRuleInRuleLists($parentKey);
 
                 if (!$hasArrayObjectRule) {
-                    throw new \Exception($parentKey.' key must has array rule in '.static::class);
+                    throw new \Exception($parentKey.' key must has array rule in '.$cls);
                 }
             }
         }
@@ -404,18 +404,9 @@ abstract class ServiceBase
                     foreach ($rKeyVal as $k => $v) {
                         $rNewKey = preg_replace('/^'.$matches[1].'\.\*/', $matches[1].'.'.$k, $rKey);
                         $ruleLists[$rNewKey] = $ruleLists[$rKey];
-                        $this->names->offsetSet(
-                            $rNewKey,
-                            preg_replace(
-                                '/\{\{(\s*)'.$i.'(\s*)\}\}/',
-                                $k,
-                                $this->resolveBindName('{{'.$rKey.'}}')
-                            )
-                        );
                     }
                 }
                 unset($ruleLists[$rKey]);
-                $this->names->offsetExists($rKey) ? $this->names->offsetUnset($rKey) : null;
             }
         }
 
@@ -444,12 +435,6 @@ abstract class ServiceBase
                     }, ARRAY_FILTER_USE_KEY);
                     foreach (array_keys($removeRuleLists) as $v) {
                         unset($ruleLists[$v]);
-                    }
-                    $removeNames = array_filter((array) $this->names, function ($v) use ($k) {
-                        return preg_match('/^'.$k.'\./', $v);
-                    }, ARRAY_FILTER_USE_KEY);
-                    foreach (array_keys($removeNames) as $v) {
-                        $this->names->offsetUnset($v);
                     }
 
                     break;
@@ -612,6 +597,19 @@ abstract class ServiceBase
         return array_unique(array_values($arr));
     }
 
+    private function hasArrayObjectRuleInRuleLists($key)
+    {
+        $hasArrayObjectRule = false;
+        foreach ($this->getAllRuleLists() as $cl => $ruleLists) {
+            $ruleList = array_key_exists($key, $ruleLists) ? $ruleLists[$key] : [];
+            if ($cl::hasArrayObjectRuleInRuleList($ruleList)) {
+                $hasArrayObjectRule = true;
+            }
+        }
+
+        return $hasArrayObjectRule;
+    }
+
     private function isResolveError($value)
     {
         $errorClass = get_class($this->resolveError());
@@ -643,20 +641,37 @@ abstract class ServiceBase
     {
         while ($boundKeys = $this->getBindKeysInName($name)) {
             $key = $boundKeys[0];
-            $pattern = '/\{\{(\s*)'.$key.'(\s*)\}\}/';
+            $keySegs = explode('.', $key);
+            $mainKey = $keySegs[0];
             $bindNames = new \ArrayObject(array_merge(
                 $this->getAllBindNames()->getArrayCopy(),
                 $this->names->getArrayCopy(),
             ));
 
-            if ($bindNames->offsetExists($key)) {
-                $bindName = $bindNames->offsetGet($key);
+            if ($bindNames->offsetExists($mainKey)) {
+                $bindName = $bindNames->offsetGet($mainKey);
             } else {
-                throw new \Exception('"'.$key.'" name not exists in '.static::class);
+                throw new \Exception('"'.$mainKey.'" name not exists in '.static::class);
             }
 
+            $pattern = '/\{\{(\s*)'.$key.'(\s*)\}\}/';
             $replace = $this->resolveBindName($bindName);
-            $name = preg_replace($pattern, $replace, $name, 1);
+            $name = preg_replace($pattern, $replace, $name);
+            $matches = [];
+            preg_match_all('/\[\.\.\.\]/', $name, $matches);
+            if (count($matches) > 1) {
+                throw new \Exception($name.' has multiple "[...]" string in '.static::class);
+            }
+            if ($this->hasArrayObjectRuleInRuleLists($mainKey) && empty($matches)) {
+                throw new \Exception('"'.$mainKey.'" name is required "[...]" string in '.static::class);
+            }
+
+            if (count($keySegs) > 1) {
+                $replace = '['.implode('][', array_slice($keySegs, 1)).']';
+                $name = preg_replace('/\[\.\.\.\]/', $replace, $name);
+            } elseif (1 == count($keySegs)) {
+                $name = preg_replace('/\[\.\.\.\]/', '', $name);
+            }
         }
 
         return $name;
@@ -763,9 +778,16 @@ abstract class ServiceBase
 
     private function validateWith($key, $items, $depth)
     {
+        $mainKey = explode('.', $key)[0];
+
         foreach ([...static::getAllTraits(), static::class] as $cls) {
+            $names = [];
             $ruleLists = $this->getRelatedRuleLists($key, $cls);
             $ruleLists = $this->filterAvailableExpandedRuleLists($cls, $key, $items, $ruleLists);
+
+            if (!empty($ruleLists)) {
+                $names[$mainKey] = $this->resolveBindName('{{'.$mainKey.'}}');
+            }
 
             foreach ($ruleLists as $k => $ruleList) {
                 foreach ($ruleList as $j => $rule) {
@@ -779,6 +801,7 @@ abstract class ServiceBase
                             $this->validations->offsetSet($key, false);
                             unset($ruleLists[$k][$j]);
                         }
+                        $names[$depKey] = $this->resolveBindName('{{'.$depKey.'}}');
                     }
                 }
             }
@@ -787,18 +810,10 @@ abstract class ServiceBase
                 foreach ($ruleList as $j => $rule) {
                     $ruleLists[$k][$j] = $cls::removeDependencyKeySymbolInRule($rule);
                 }
+                $names[$k] = $this->resolveBindName('{{'.$k.'}}');
             }
 
             $messages = $cls::getValidationErrorTemplateMessages();
-            $names = [];
-
-            foreach (array_keys((array) $this->names) as $k) {
-                $names[$k] = $this->resolveBindName('{{'.$k.'}}');
-            }
-
-            foreach (array_keys((array) $ruleLists) as $k) {
-                $names[$k] = $this->resolveBindName('{{'.$k.'}}');
-            }
 
             foreach ($ruleLists as $ruleKey => $ruleList) {
                 $errorLists = $cls::getValidationErrors(

@@ -86,7 +86,7 @@ class ServiceTest extends TestCase
 
     public function testLoadDataFromInputService()
     {
-        $service = new class extends Service {
+        $childService = new class extends Service {
             public static function getLoaders()
             {
                 return [
@@ -97,7 +97,7 @@ class ServiceTest extends TestCase
             }
         };
 
-        $service = new class(['result' => [get_class($service)]], []) extends Service {
+        $service = new class(['result' => [get_class($childService)]], []) extends Service {
             public static function getBindNames()
             {
                 return [
@@ -191,9 +191,7 @@ class ServiceTest extends TestCase
             public static function getBindNames()
             {
                 return [
-                    'result' => 'result name',
-                    'result.a' => 'result.a name',
-                    'result.b' => 'result.b name',
+                    'result' => 'result[...] name',
                 ];
             }
 
@@ -202,7 +200,9 @@ class ServiceTest extends TestCase
                 return [
                     'result' => function () {
                         return [
-                            'a' => [],
+                            'a' => [
+                                'c' => 'ccc',
+                            ],
                             'b' => [
                                 'c' => 'ccc',
                             ],
