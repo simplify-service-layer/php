@@ -584,10 +584,19 @@ abstract class ServiceBase
     private function getRelatedRuleLists($key, $cls)
     {
         $ruleLists = $this->getAllRuleLists()->offsetExists($cls) ? $this->getAllRuleLists()->getArrayCopy()[$cls] : [];
-
-        return array_filter($ruleLists, function ($k) use ($key) {
+        $filterLists = array_filter($ruleLists, function ($k) use ($key) {
             return preg_match('/^'.$key.'$/', $k) || preg_match('/^'.$key.'\./', $k);
         }, ARRAY_FILTER_USE_KEY);
+        $keySegs = explode('.', $key);
+
+        foreach (range(0, count($keySegs) - 2) as $i) {
+            $parentKey = implode('.', array_slice($keySegs, 0, $i + 1));
+            if (in_array($parentKey, array_keys($ruleLists))) {
+                $filterLists[$parentKey] = $ruleLists[$parentKey];
+            }
+        }
+
+        return $filterLists;
     }
 
     private function getShouldOrderedCallbackKeys($keys)
