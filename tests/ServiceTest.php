@@ -185,7 +185,7 @@ class ServiceTest extends TestCase
         $this->assertNotEquals($service2->getErrors()->getArrayCopy(), []);
     }
 
-    public function testLoadDataKeyParentInvaildAndChildValid()
+    public function testLoadDataKeyInvaildBecauseOfChildrenRule()
     {
         $service = new class extends Service {
             public static function getBindNames()
@@ -226,6 +226,53 @@ class ServiceTest extends TestCase
         $this->assertFalse($service->getValidations()->offsetGet('result'));
         $this->assertFalse($service->getValidations()->offsetGet('result.a'));
         $this->assertTrue($service->getValidations()->offsetGet('result.b'));
+    }
+
+    public function testLoadDataKeyInvaildBecauseOfParentRule()
+    {
+        $service = new class extends Service {
+            public static function getBindNames()
+            {
+                return [
+                    'result' => 'result[...] name',
+                ];
+            }
+
+            public static function getLoaders()
+            {
+                return [
+                    'result' => function () {
+                        return [
+                            'a' => [
+                                'c' => 'ccc',
+                            ],
+                            'b' => [
+                                'c' => 'ccc',
+                            ],
+                        ];
+                    },
+                ];
+            }
+
+            public static function getRuleLists()
+            {
+                return [
+                    'result' => ['array'],
+                    'result.a' => ['array', 'string'],
+                    'result.a.c' => ['string'],
+                    'result.b' => ['array'],
+                    'result.b.c' => ['string'],
+                ];
+            }
+        };
+
+        $service->run();
+
+        $this->assertFalse($service->getValidations()->offsetGet('result'));
+        $this->assertFalse($service->getValidations()->offsetGet('result.a'));
+        $this->assertFalse($service->getValidations()->offsetGet('result.a.c'));
+        $this->assertTrue($service->getValidations()->offsetGet('result.b'));
+        $this->assertTrue($service->getValidations()->offsetGet('result.b.c'));
     }
 
     public function testLoadName()
