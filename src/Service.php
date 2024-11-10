@@ -28,6 +28,10 @@ class Service extends ServiceBase
             }
         }
 
+        foreach ($names as $k => $name) {
+            $names[$k] = preg_replace('/\[\.\.\.\]/', '', $name);
+        }
+
         $validator = Validator::newInstance($data, $ruleLists, $names, $messages);
         $validator->passes();
 
