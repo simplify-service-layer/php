@@ -667,8 +667,6 @@ abstract class ServiceBase
             if (count($keySegs) > 1) {
                 $replace = '['.implode('][', array_slice($keySegs, 1)).']';
                 $name = preg_replace('/\[\.\.\.\]/', $replace, $name);
-            } elseif (1 == count($keySegs)) {
-                $name = preg_replace('/\[\.\.\.\]/', '', $name);
             }
         }
 
