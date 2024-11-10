@@ -27,8 +27,6 @@ abstract class ServiceBase
 
     abstract public static function hasArrayObjectRuleInRuleList($ruleList);
 
-    abstract public static function removeDependencyKeySymbolInRule($rule);
-
     abstract protected function getResponseBody($result, $totalErrors);
 
     public function __construct(array $inputs = [], array $names = [], ?self $parent = null)
@@ -807,9 +805,6 @@ abstract class ServiceBase
             }
 
             foreach ($ruleLists as $k => $ruleList) {
-                foreach ($ruleList as $j => $rule) {
-                    $ruleLists[$k][$j] = $cls::removeDependencyKeySymbolInRule($rule);
-                }
                 $names[$k] = $this->resolveBindName('{{'.$k.'}}');
             }
 
