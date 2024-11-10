@@ -22,6 +22,12 @@ class Service extends ServiceBase
 
     public static function getValidationErrors($data, $ruleLists, $names, $messages)
     {
+        foreach ($ruleLists as $k => $ruleList) {
+            foreach ($ruleList as $j => $rule) {
+                $ruleLists[$k][$j] = preg_replace(static::BIND_NAME_EXP, '$1', $rule);
+            }
+        }
+
         $validator = Validator::newInstance($data, $ruleLists, $names, $messages);
         $validator->passes();
 
@@ -43,11 +49,6 @@ class Service extends ServiceBase
         }
 
         return false;
-    }
-
-    public static function removeDependencyKeySymbolInRule($rule)
-    {
-        return preg_replace(static::BIND_NAME_EXP, '$1', $rule);
     }
 
     protected function getResponseBody($result, $totalErrors)
