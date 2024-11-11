@@ -793,6 +793,23 @@ abstract class ServiceBase
                             throw new \Exception('wildcard(*) key can\'t exists in rule dependency in '.$cls);
                         }
 
+                        $depKeySegs = explode('.', $depKey);
+                        $depVal = (array) $items;
+                        $hasDepVal = true;
+                        while (!empty($depKeySegs)) {
+                            $seg = array_shift($depKeySegs);
+                            if (!array_key_exists($seg, $depVal)) {
+                                $hasDepVal = false;
+
+                                break;
+                            }
+                            $depVal = $depVal[$seg];
+                        }
+
+                        if (!$hasDepVal) {
+                            unset($ruleLists[$k][$j]);
+                        }
+
                         if (!$this->validate($depKey, $depth)) {
                             $this->validations->offsetSet($key, false);
                             unset($ruleLists[$k][$j]);
