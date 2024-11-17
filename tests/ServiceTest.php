@@ -329,7 +329,7 @@ class ServiceTest extends TestCase
         $this->assertStringContainsString('result name', $service->getErrors()->getArrayCopy()['result'][0]);
     }
 
-    public function testLoadNameNested()
+    public function testLoadNameBoundNested()
     {
         $service = new class([], ['result' => '{{abcd}}', 'aaa' => 'aaaa', 'abcd' => '{{aaa}} bbb ccc ddd']) extends Service {
             public static function getBindNames()
@@ -354,5 +354,33 @@ class ServiceTest extends TestCase
 
         $this->assertNotEquals($service->getErrors()->getArrayCopy(), []);
         $this->assertStringContainsString('aaaa bbb ccc ddd', $service->getErrors()->getArrayCopy()['result'][0]);
+    }
+
+    public function testLoadNameMultidimension()
+    {
+        $service = new class(['result' => ['a' => ['c' => 'ccc']]], ['result' => 'result[...] name']) extends Service {
+            public static function getBindNames()
+            {
+                return [];
+            }
+
+            public static function getLoaders()
+            {
+                return [];
+            }
+
+            public static function getRuleLists()
+            {
+                return [
+                    'result' => ['array', 'required'],
+                    'result.a' => ['array', 'required'],
+                    'result.a.b' => ['required'],
+                ];
+            }
+        };
+
+        $service->run();
+
+        $this->assertNotEquals($service->getErrors()->getArrayCopy(), []);
     }
 }
