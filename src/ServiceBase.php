@@ -25,7 +25,7 @@ abstract class ServiceBase
 
     abstract public static function getValidationErrorTemplateMessages();
 
-    abstract public static function hasArrayObjectRuleInRuleList($ruleList);
+    abstract public static function hasArrayObjectRuleInRuleList($ruleList, $key = null);
 
     abstract protected function getResponseBody($result, $totalErrors);
 
@@ -352,9 +352,9 @@ abstract class ServiceBase
     private function filterAvailableExpandedRuleLists($cls, $key, $data, $ruleLists)
     {
         foreach (array_keys($ruleLists) as $k) {
-            $segs = explode('.', $k);
-            for ($i = 0; $i < count($segs) - 1; ++$i) {
-                $parentKey = implode('.', array_slice($segs, 0, $i + 1));
+            $keySegs = explode('.', $k);
+            for ($i = 0; $i < count($keySegs) - 1; ++$i) {
+                $parentKey = implode('.', array_slice($keySegs, 0, $i + 1));
                 $hasArrayObjectRule = $this->hasArrayObjectRuleInRuleLists($parentKey);
 
                 if (!$hasArrayObjectRule) {
@@ -588,8 +588,8 @@ abstract class ServiceBase
 
         foreach ($keys as $key) {
             $deps = $this->getAllPromiseLists()->offsetExists($key) ? $this->getAllPromiseLists()->offsetGet($key) : [];
-            $list = $this->getShouldOrderedCallbackKeys($deps);
-            $arr = [...$list, $key, ...$arr];
+            $orderedKeys = $this->getShouldOrderedCallbackKeys($deps);
+            $arr = [...$orderedKeys, $key, ...$arr];
         }
 
         return array_unique(array_values($arr));
@@ -600,7 +600,7 @@ abstract class ServiceBase
         $hasArrayObjectRule = false;
         foreach ($this->getAllRuleLists() as $cl => $ruleLists) {
             $ruleList = array_key_exists($key, $ruleLists) ? $ruleLists[$key] : [];
-            if ($cl::hasArrayObjectRuleInRuleList($ruleList)) {
+            if ($cl::hasArrayObjectRuleInRuleList($ruleList, $key)) {
                 $hasArrayObjectRule = true;
             }
         }
@@ -837,10 +837,13 @@ abstract class ServiceBase
                     if (!$this->errors->offsetExists($ruleKey)) {
                         $this->errors->offsetSet($ruleKey, []);
                     }
-                    $this->errors->offsetSet($ruleKey, array_merge(
-                        $this->errors->offsetGet($ruleKey),
-                        $errorLists[$ruleKey],
-                    ));
+                    foreach ($errorLists[$ruleKey] as $error) {
+                        $errors = $this->errors->offsetGet($ruleKey);
+                        if (!in_array($error, $errors)) {
+                            array_push($errors, $error);
+                            $this->errors->offsetSet($ruleKey, $errors);
+                        }
+                    }
                     $this->validations->offsetSet($key, false);
 
                     return false;

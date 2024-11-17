@@ -46,7 +46,7 @@ class Service extends ServiceBase
         return $messages;
     }
 
-    public static function hasArrayObjectRuleInRuleList($ruleList)
+    public static function hasArrayObjectRuleInRuleList($ruleList, $key = null)
     {
         if (!empty($ruleList) && in_array('array', $ruleList)) {
             return true;
