@@ -185,6 +185,41 @@ class ServiceTest extends TestCase
         $this->assertNotEquals($service2->getErrors()->getArrayCopy(), []);
     }
 
+    public function testLoadDataFromLoaderWithDependency()
+    {
+        $service1 = new class extends Service {
+            public static function getBindNames()
+            {
+                return [
+                    'result' => 'name for result',
+                ];
+            }
+
+            public static function getLoaders()
+            {
+                return [
+                    'aaa' => function () {
+                        return 'aaaaaa';
+                    },
+                    'result' => function ($aaa) {
+                        return $aaa.' value';
+                    },
+                ];
+            }
+
+            public static function getRuleLists()
+            {
+                return [
+                    'result' => ['required', 'string'],
+                ];
+            }
+        };
+        $service1->run();
+
+        $this->assertEquals($service1->getErrors()->getArrayCopy(), []);
+        $this->assertEquals($service1->getData()['result'], 'aaaaaa value');
+    }
+
     public function testLoadDataKeyInvaildBecauseOfChildrenRule()
     {
         $service = new class extends Service {
