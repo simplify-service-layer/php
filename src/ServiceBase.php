@@ -749,6 +749,7 @@ abstract class ServiceBase
         }
 
         $orderedCallbackKeys = $this->getOrderedCallbackKeys($key);
+        $callbacks = $this->getAllCallbacks();
 
         foreach ($orderedCallbackKeys as $callbackKey) {
             $callback = $this->getAllCallbacks()->offsetGet($callbackKey);
@@ -759,9 +760,14 @@ abstract class ServiceBase
                     $this->validations->offsetSet($key, false);
                 }
             }
+        }
 
-            if (!preg_match('/@defer$/', $callbackKey)) {
-                $this->resolve($callback);
+        if (true === $this->validations->offsetGet($key)) {
+            foreach ($orderedCallbackKeys as $callbackKey) {
+                if (!preg_match('/@defer$/', $callbackKey)) {
+                    $callback = $callbacks->offsetGet($callbackKey);
+                    $this->resolve($callback);
+                }
             }
         }
 
