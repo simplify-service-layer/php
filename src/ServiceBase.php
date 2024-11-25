@@ -92,7 +92,7 @@ abstract class ServiceBase
         $arr = [];
 
         foreach (array_keys(static::getCallbacks()) as $key) {
-            if (!preg_match('/^[a-zA-Z][\w-]{0,}#[\w-]{1,}(|@defer)/', $key)) {
+            if (!preg_match('/^[a-zA-Z][\w-]{0,}__[\w-]{1,}(|@defer)/', $key)) {
                 throw new \Exception($key.' callback key is not support pattern in '.static::class);
             }
         }
@@ -553,10 +553,10 @@ abstract class ServiceBase
     private function getOrderedCallbackKeys($key)
     {
         $promiseKeys = array_filter(array_keys($this->getAllPromiseLists()->getArrayCopy()), function ($value) use ($key) {
-            return preg_match('/^'.$key.'\#/', $value);
+            return preg_match('/^'.$key.'\__/', $value);
         });
         $allKeys = array_filter(array_keys($this->getAllCallbacks()->getArrayCopy()), function ($value) use ($key) {
-            return preg_match('/^'.$key.'\#/', $value);
+            return preg_match('/^'.$key.'\__/', $value);
         });
         $orderedKeys = $this->getShouldOrderedCallbackKeys($promiseKeys);
         $restKeys = array_diff($allKeys, $orderedKeys);
