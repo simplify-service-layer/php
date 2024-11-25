@@ -699,14 +699,14 @@ abstract class ServiceBase
         $depths = explode('|', $depth);
         $mainKey = explode('.', $key)[0];
 
+        if ($this->validations->offsetExists($key)) {
+            return $this->validations->offsetGet($key);
+        }
+
         if (count(array_filter($depths, function ($seg) use ($key) {
             return $seg == $key;
         })) >= 2) {
             throw new \Exception('validation dependency circular reference['.$depth.'] occurred in '.static::class);
-        }
-
-        if ($this->validations->offsetExists($key)) {
-            return $this->validations->offsetGet($key);
         }
 
         $keySegs = explode('.', $key);
