@@ -12,6 +12,40 @@ use SimplifyServiceLayer\Service;
  */
 class ServiceTest extends TestCase
 {
+    public function testCallback()
+    {
+        $service = new class(['result' => (object) ['aaaa' => 'aaaa']]) extends Service {
+            public static function getBindNames()
+            {
+                return [
+                    'result' => 'name for key1',
+                ];
+            }
+
+            public static function getCallbacks()
+            {
+                return [
+                    'result__cb1' => function ($result) {
+                        $result->abcd = 'aaaa';
+                    },
+                ];
+            }
+
+            public static function getRuleLists()
+            {
+                return [
+                    'result' => ['required'],
+                ];
+            }
+        };
+
+        $service->run();
+
+        $this->assertEquals($service->getErrors()->getArrayCopy(), []);
+        $this->assertEquals($service->getData()['result']->aaaa, 'aaaa');
+        $this->assertEquals($service->getData()['result']->abcd, 'aaaa');
+    }
+
     public function testLoadDataFromInput()
     {
         $service = new class(['result' => 'result value']) extends Service {
