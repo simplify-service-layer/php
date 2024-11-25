@@ -46,6 +46,109 @@ class ServiceTest extends TestCase
         $this->assertEquals($service->getData()['result']->abcd, 'aaaa');
     }
 
+    public function testCallbackWithDependency()
+    {
+        $service1 = new class(['result' => (object) ['aaaa' => 'aaaa']]) extends Service {
+            public static function getBindNames()
+            {
+                return [
+                    'result' => 'name for result',
+                ];
+            }
+
+            public static function getCallbacks()
+            {
+                return [
+                    'result__cb1' => function ($result, $test1) {
+                        $result->abcd = $test1;
+                    },
+                    'result__cb2' => function ($result, $test2) {
+                        $result->bcde = $test2;
+                    },
+                ];
+            }
+
+            public static function getLoaders()
+            {
+                return [
+                    'test1' => function () {
+                        return 'test1 val';
+                    },
+                ];
+            }
+
+            public static function getRuleLists()
+            {
+                return [
+                    'result' => ['required'],
+                ];
+            }
+        };
+
+        $service1->run();
+
+        $this->assertEquals($service1->getErrors()->getArrayCopy(), []);
+        $this->assertEquals($service1->getData()['result']->aaaa, 'aaaa');
+        $this->assertEquals($service1->getData()['result']->abcd, 'test1 val');
+        $this->assertTrue($service1->getValidations()['result']);
+        $this->assertTrue($service1->getValidations()['test1']);
+        $this->assertTrue($service1->getValidations()['test2']);
+        $this->assertFalse(
+            array_key_exists('bcde', (array) $service1->getData()['result'])
+        );
+
+        $service2 = new class(['result' => (object) ['aaaa' => 'aaaa']]) extends Service {
+            public static function getBindNames()
+            {
+                return [
+                    'result' => 'name for result',
+                    'test2' => 'name for test2',
+                ];
+            }
+
+            public static function getCallbacks()
+            {
+                return [
+                    'result__cb1' => function ($result, $test1) {
+                        $result->abcd = $test1;
+                    },
+                    'result__cb2' => function ($result, $test2) {
+                        $result->bcde = $test2;
+                    },
+                ];
+            }
+
+            public static function getLoaders()
+            {
+                return [
+                    'test1' => function () {
+                        return 'test1 val';
+                    },
+                ];
+            }
+
+            public static function getRuleLists()
+            {
+                return [
+                    'result' => ['required'],
+                    'test2' => ['required'],
+                ];
+            }
+        };
+
+        $service2->run();
+        $this->assertNotEquals($service2->getErrors()->getArrayCopy(), []);
+        $this->assertFalse($service2->getValidations()['result']);
+        $this->assertTrue($service2->getValidations()['test1']);
+        $this->assertFalse($service2->getValidations()['test2']);
+        $this->assertFalse(
+            array_key_exists('abcd', (array) $service2->getData()['result'])
+        );
+        $this->assertFalse(
+            array_key_exists('bcde', (array) $service2->getData()['result'])
+        );
+    }
+
     public function testLoadDataFromInput()
     {
         $service = new class(['result' => 'result value']) extends Service {
