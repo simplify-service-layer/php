@@ -18,7 +18,7 @@ class ServiceTest extends TestCase
             public static function getBindNames()
             {
                 return [
-                    'result' => 'name for key1',
+                    'result' => 'name for result',
                 ];
             }
 
@@ -155,7 +155,7 @@ class ServiceTest extends TestCase
             public static function getBindNames()
             {
                 return [
-                    'result' => 'name for key1',
+                    'result' => 'name for result',
                 ];
             }
 

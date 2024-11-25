@@ -752,7 +752,7 @@ abstract class ServiceBase
         $callbacks = $this->getAllCallbacks();
 
         foreach ($orderedCallbackKeys as $callbackKey) {
-            $callback = $this->getAllCallbacks()->offsetGet($callbackKey);
+            $callback = $callbacks->offsetGet($callbackKey);
             $deps = $this->getClosureDependencies($callback);
 
             foreach ($deps as $dep) {
