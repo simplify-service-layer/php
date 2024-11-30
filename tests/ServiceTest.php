@@ -14,7 +14,7 @@ class ServiceTest extends TestCase
 {
     public function testCallback()
     {
-        $service = new class(['result' => (object) ['aaaa' => 'aaaa']]) extends Service {
+        $service = (new class extends Service {
             public static function getBindNames()
             {
                 return [
@@ -37,7 +37,7 @@ class ServiceTest extends TestCase
                     'result' => ['required'],
                 ];
             }
-        };
+        })->init(['result' => (object) ['aaaa' => 'aaaa']]);
 
         $service->run();
 
@@ -48,7 +48,7 @@ class ServiceTest extends TestCase
 
     public function testCallbackWithDependency()
     {
-        $service1 = new class(['result' => (object) ['aaaa' => 'aaaa']]) extends Service {
+        $service1 = (new class extends Service {
             public static function getBindNames()
             {
                 return [
@@ -83,7 +83,7 @@ class ServiceTest extends TestCase
                     'result' => ['required'],
                 ];
             }
-        };
+        })->init(['result' => (object) ['aaaa' => 'aaaa']]);
 
         $service1->run();
 
@@ -97,7 +97,7 @@ class ServiceTest extends TestCase
             array_key_exists('bcde', (array) $service1->getData()['result'])
         );
 
-        $service2 = new class(['result' => (object) ['aaaa' => 'aaaa']]) extends Service {
+        $service2 = (new class extends Service {
             public static function getBindNames()
             {
                 return [
@@ -134,9 +134,10 @@ class ServiceTest extends TestCase
                     'test2' => ['required'],
                 ];
             }
-        };
+        })->init(['result' => (object) ['aaaa' => 'aaaa']]);
 
         $service2->run();
+
         $this->assertNotEquals($service2->getErrors()->getArrayCopy(), []);
         $this->assertFalse($service2->getValidations()['result']);
         $this->assertTrue($service2->getValidations()['test1']);
@@ -151,7 +152,7 @@ class ServiceTest extends TestCase
 
     public function testLoadDataFromInput()
     {
-        $service = new class(['result' => 'result value']) extends Service {
+        $service = (new class extends Service {
             public static function getBindNames()
             {
                 return [
@@ -170,7 +171,7 @@ class ServiceTest extends TestCase
                     'result' => ['required'],
                 ];
             }
-        };
+        })->init(['result' => 'result value']);
 
         $service->run();
 
@@ -179,7 +180,7 @@ class ServiceTest extends TestCase
 
     public function testLoadDataFromInputChildBatchService()
     {
-        $childService = new class extends Service {
+        $childService = (new class extends Service {
             public static function getLoaders()
             {
                 return [
@@ -188,9 +189,9 @@ class ServiceTest extends TestCase
                     },
                 ];
             }
-        };
+        })->init();
 
-        $service = new class(['result' => [[get_class($childService)], [get_class($childService)]]], []) extends Service {
+        $service = (new class extends Service {
             public static function getBindNames()
             {
                 return [
@@ -209,7 +210,12 @@ class ServiceTest extends TestCase
                     'result' => ['required'],
                 ];
             }
-        };
+        })->init([
+            'result' => [
+                [get_class($childService)],
+                [get_class($childService)],
+            ],
+        ], []);
 
         $service->run();
         $value = $service->getData()->offsetGet('result');
@@ -223,7 +229,7 @@ class ServiceTest extends TestCase
 
     public function testLoadDataFromInputService()
     {
-        $childService = new class extends Service {
+        $childService = (new class extends Service {
             public static function getLoaders()
             {
                 return [
@@ -232,9 +238,9 @@ class ServiceTest extends TestCase
                     },
                 ];
             }
-        };
+        })->init();
 
-        $service = new class(['result' => [get_class($childService)]], []) extends Service {
+        $service = (new class extends Service {
             public static function getBindNames()
             {
                 return [
@@ -253,7 +259,9 @@ class ServiceTest extends TestCase
                     'result' => ['required'],
                 ];
             }
-        };
+        })->init([
+            'result' => [get_class($childService)],
+        ], []);
 
         $service->run();
         $value = $service->getData()->offsetGet('result');
@@ -264,7 +272,7 @@ class ServiceTest extends TestCase
 
     public function testLoadDataFromLoader()
     {
-        $service1 = new class extends Service {
+        $service1 = (new class extends Service {
             public static function getBindNames()
             {
                 return [
@@ -287,12 +295,13 @@ class ServiceTest extends TestCase
                     'result' => ['required', 'string'],
                 ];
             }
-        };
+        })->init();
+
         $service1->run();
 
         $this->assertEquals($service1->getErrors()->getArrayCopy(), []);
 
-        $service2 = new class extends Service {
+        $service2 = (new class extends Service {
             public static function getBindNames()
             {
                 return [
@@ -315,7 +324,7 @@ class ServiceTest extends TestCase
                     'result' => ['required', 'string'],
                 ];
             }
-        };
+        })->init();
 
         $service2->run();
 
@@ -324,7 +333,7 @@ class ServiceTest extends TestCase
 
     public function testLoadDataFromLoaderWithDependency()
     {
-        $service1 = new class extends Service {
+        $service1 = (new class extends Service {
             public static function getBindNames()
             {
                 return [
@@ -350,7 +359,100 @@ class ServiceTest extends TestCase
                     'result' => ['required', 'string'],
                 ];
             }
-        };
+        })->init();
+
+        $service1->run();
+
+        $this->assertEquals($service1->getErrors()->getArrayCopy(), []);
+        $this->assertEquals($service1->getData()['result'], 'aaaaaa value');
+    }
+
+    public function testLoadDataFromProperty()
+    {
+        $service1 = (new class extends Service {
+            public $result = 'aaa';
+
+            public static function getBindNames()
+            {
+                return [
+                    'result' => 'name for result',
+                ];
+            }
+
+            public static function getLoaders()
+            {
+                return [];
+            }
+
+            public static function getRuleLists()
+            {
+                return [
+                    'result' => ['required', 'string'],
+                ];
+            }
+        })->init();
+
+        $service1->run();
+
+        $this->assertEquals($service1->getErrors()->getArrayCopy(), []);
+
+        $service2 = (new class extends Service {
+            public $result = ['aaa', 'bbb', 'ccc'];
+
+            public static function getBindNames()
+            {
+                return [
+                    'result' => 'name for result',
+                ];
+            }
+
+            public static function getLoaders()
+            {
+                return [];
+            }
+
+            public static function getRuleLists()
+            {
+                return [
+                    'result' => ['required', 'string'],
+                ];
+            }
+        })->init();
+
+        $service2->run();
+
+        $this->assertNotEquals($service2->getErrors()->getArrayCopy(), []);
+    }
+
+    public function testLoadDataFromPropertyInDependency()
+    {
+        $service1 = (new class extends Service {
+            public $aaa = 'aaaaaa';
+
+            public static function getBindNames()
+            {
+                return [
+                    'result' => 'name for result',
+                ];
+            }
+
+            public static function getLoaders()
+            {
+                return [
+                    'result' => function ($aaa) {
+                        return $aaa.' value';
+                    },
+                ];
+            }
+
+            public static function getRuleLists()
+            {
+                return [
+                    'result' => ['required', 'string'],
+                ];
+            }
+        })->init();
+
         $service1->run();
 
         $this->assertEquals($service1->getErrors()->getArrayCopy(), []);
@@ -359,7 +461,7 @@ class ServiceTest extends TestCase
 
     public function testLoadDataKeyInvaildBecauseOfChildrenRule()
     {
-        $service = new class extends Service {
+        $service = (new class extends Service {
             public static function getBindNames()
             {
                 return [
@@ -391,7 +493,7 @@ class ServiceTest extends TestCase
                     'result.b' => ['array'],
                 ];
             }
-        };
+        })->init();
 
         $service->run();
 
@@ -402,7 +504,7 @@ class ServiceTest extends TestCase
 
     public function testLoadDataKeyInvaildBecauseOfParentRule()
     {
-        $service = new class extends Service {
+        $service = (new class extends Service {
             public static function getBindNames()
             {
                 return [
@@ -436,7 +538,7 @@ class ServiceTest extends TestCase
                     'result.b.c' => ['string'],
                 ];
             }
-        };
+        })->init();
 
         $service->run();
 
@@ -449,7 +551,7 @@ class ServiceTest extends TestCase
 
     public function testLoadName()
     {
-        $service = new class([], ['result' => 'result name']) extends Service {
+        $service = (new class extends Service {
             public static function getBindNames()
             {
                 return [];
@@ -466,7 +568,10 @@ class ServiceTest extends TestCase
                     'result' => ['required'],
                 ];
             }
-        };
+        })->init(
+            [],
+            ['result' => 'result name'],
+        );
 
         $service->run();
 
@@ -476,7 +581,7 @@ class ServiceTest extends TestCase
 
     public function testLoadNameBound()
     {
-        $service = new class([], []) extends Service {
+        $service = (new class extends Service {
             public static function getBindNames()
             {
                 return ['result' => 'result name'];
@@ -493,7 +598,7 @@ class ServiceTest extends TestCase
                     'result' => ['required'],
                 ];
             }
-        };
+        })->init([], []);
 
         $service->run();
 
@@ -503,7 +608,7 @@ class ServiceTest extends TestCase
 
     public function testLoadNameBoundNested()
     {
-        $service = new class([], ['result' => '{{abcd}}', 'aaa' => 'aaaa', 'abcd' => '{{aaa}} bbb ccc ddd']) extends Service {
+        $service = (new class extends Service {
             public static function getBindNames()
             {
                 return [];
@@ -520,7 +625,14 @@ class ServiceTest extends TestCase
                     'result' => ['required'],
                 ];
             }
-        };
+        })->init(
+            [],
+            [
+                'result' => '{{abcd}}',
+                'aaa' => 'aaaa',
+                'abcd' => '{{aaa}} bbb ccc ddd',
+            ],
+        );
 
         $service->run();
 
@@ -530,7 +642,7 @@ class ServiceTest extends TestCase
 
     public function testLoadNameMultidimension()
     {
-        $service = new class(['result' => ['a' => ['c' => 'ccc']]], ['result' => 'result[...] name']) extends Service {
+        $service = (new class extends Service {
             public static function getBindNames()
             {
                 return [];
@@ -549,7 +661,10 @@ class ServiceTest extends TestCase
                     'result.a.b' => ['required'],
                 ];
             }
-        };
+        })->init(
+            ['result' => ['a' => ['c' => 'ccc']]],
+            ['result' => 'result[...] name'],
+        );
 
         $service->run();
 

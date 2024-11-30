@@ -12,9 +12,9 @@ abstract class ServiceBase
     private \ArrayObject $data;
     private \ArrayObject $errors;
     private \ArrayObject $inputs;
-    private bool $isRun;
+    private bool $isRun = false;
     private \ArrayObject $names;
-    private ?self $parent;
+    private ?self $parent = null;
     private \ArrayObject $validations;
 
     abstract public static function filterPresentRelatedRule($rule);
@@ -28,32 +28,6 @@ abstract class ServiceBase
     abstract public static function hasArrayObjectRuleInRuleList($ruleList, $key = null);
 
     abstract protected function getResponseBody($result, $totalErrors);
-
-    public function __construct(array $inputs = [], array $names = [], ?self $parent = null)
-    {
-        $this->childs = new \ArrayObject();
-        $this->data = new \ArrayObject();
-        $this->errors = new \ArrayObject();
-        $this->inputs = new \ArrayObject($inputs);
-        $this->names = new \ArrayObject($names);
-        $this->validations = new \ArrayObject();
-        $this->isRun = false;
-        $this->parent = $parent;
-
-        foreach (array_keys($inputs) as $inputKey) {
-            if (!preg_match('/^[a-zA-Z][\w-]{0,}/', $inputKey)) {
-                throw new \Exception($inputKey.' loader key is not support pattern in '.static::class);
-            }
-        }
-
-        foreach (array_keys((array) $this->inputs) as $key) {
-            $this->validate($key);
-        }
-
-        // defined key validation
-        static::getAllCallbacks();
-        static::getAllLoaders();
-    }
 
     public static function addOnFailCallback(\Closure $callback)
     {
@@ -219,12 +193,10 @@ abstract class ServiceBase
     {
         isset($value[1]) ?: $value[1] = [];
         isset($value[2]) ?: $value[2] = [];
-        isset($value[3]) ?: $value[3] = null;
 
         $cls = $value[0];
         $data = $value[1];
         $names = $value[2];
-        $parent = $value[3];
 
         foreach ($data as $key => $value) {
             if ('' === $value) {
@@ -232,7 +204,7 @@ abstract class ServiceBase
             }
         }
 
-        return new $cls($data, $names, $parent);
+        return (new $cls())->init($data, $names);
     }
 
     public static function isInitable($value)
@@ -258,6 +230,18 @@ abstract class ServiceBase
     public function getErrors()
     {
         return clone $this->errors;
+    }
+
+    public function getInjectedPropNames()
+    {
+        return array_diff(
+            array_map(function ($property) {
+                return $property->getName();
+            }, (new \ReflectionClass(static::class))->getProperties()),
+            array_map(function ($property) {
+                return $property->getName();
+            }, (new \ReflectionClass(self::class))->getProperties()),
+        );
     }
 
     public function getInputs()
@@ -287,6 +271,38 @@ abstract class ServiceBase
     public function getValidations()
     {
         return clone $this->validations;
+    }
+
+    public function init(array $inputs = [], array $names = [])
+    {
+        if ($this->isRun) {
+            throw new \Exception('already run service ['.static::class.']');
+        }
+
+        $injectedPropNames = $this->getInjectedPropNames();
+
+        foreach (array_keys($inputs) as $inputKey) {
+            if (in_array($inputKey, $injectedPropNames)) {
+                throw new \Exception($inputKey.' input key is duplicated with property in '.static::class);
+            }
+            if (!preg_match('/^[a-zA-Z][\w-]{0,}/', $inputKey)) {
+                throw new \Exception($inputKey.' input key is not support pattern in '.static::class);
+            }
+        }
+
+        $this->childs = new \ArrayObject();
+        $this->data = new \ArrayObject();
+        $this->errors = new \ArrayObject();
+        $this->inputs = new \ArrayObject($inputs);
+        $this->names = new \ArrayObject($names);
+        $this->validations = new \ArrayObject();
+        $this->isRun = false;
+
+        // defined key validation
+        static::getAllCallbacks();
+        static::getAllLoaders();
+
+        return $this;
     }
 
     public function run()
@@ -347,6 +363,11 @@ abstract class ServiceBase
         $result = $this->getData()->offsetExists('result') ? $this->getData()->offsetGet('result') : null;
 
         return $this->getResponseBody($result, $totalErrors);
+    }
+
+    public function setParent(self $parent)
+    {
+        $this->parent = $parent;
     }
 
     private function filterAvailableExpandedRuleLists($cls, $data, $ruleLists)
@@ -487,6 +508,8 @@ abstract class ServiceBase
 
         if ($this->getInputs()->offsetExists($key)) {
             $value = $this->getInputs()->offsetGet($key);
+        } elseif (in_array($key, $this->getInjectedPropNames())) {
+            $value = $this->{$key};
         } else {
             if (empty($loader)) {
                 return $data;
@@ -520,12 +543,12 @@ abstract class ServiceBase
                 foreach ($v[2] as $k => $name) {
                     $v[2][$k] = $this->resolveBindName($name);
                 }
-                $v[3] = $this;
-
                 $service = static::initService($v);
+                $service->setParent($this);
                 $resolved = $service->run();
             } elseif ($v instanceof self) {
                 $service = $v;
+                $service->setParent($this);
                 $resolved = $service->run();
             }
 
