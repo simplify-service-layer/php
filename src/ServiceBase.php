@@ -349,7 +349,7 @@ abstract class ServiceBase
         return $this->getResponseBody($result, $totalErrors);
     }
 
-    private function filterAvailableExpandedRuleLists($cls, $key, $data, $ruleLists)
+    private function filterAvailableExpandedRuleLists($cls, $data, $ruleLists)
     {
         foreach (array_keys($ruleLists) as $k) {
             $keySegs = explode('.', $k);
@@ -785,7 +785,7 @@ abstract class ServiceBase
         foreach ([...static::getAllTraits(), static::class] as $cls) {
             $names = [];
             $ruleLists = $this->getRelatedRuleLists($key, $cls);
-            $ruleLists = $this->filterAvailableExpandedRuleLists($cls, $key, $items, $ruleLists);
+            $ruleLists = $this->filterAvailableExpandedRuleLists($cls, $items, $ruleLists);
 
             if (!empty($ruleLists)) {
                 $names[$mainKey] = $this->resolveBindName('{{'.$mainKey.'}}');
