@@ -37,7 +37,7 @@ class ServiceTest extends TestCase
                     'result' => ['required'],
                 ];
             }
-        })->init(['result' => (object) ['aaaa' => 'aaaa']]);
+        })->setWith(['result' => (object) ['aaaa' => 'aaaa']]);
 
         $service->run();
 
@@ -83,7 +83,7 @@ class ServiceTest extends TestCase
                     'result' => ['required'],
                 ];
             }
-        })->init(['result' => (object) ['aaaa' => 'aaaa']]);
+        })->setWith(['result' => (object) ['aaaa' => 'aaaa']]);
 
         $service1->run();
 
@@ -134,7 +134,7 @@ class ServiceTest extends TestCase
                     'test2' => ['required'],
                 ];
             }
-        })->init(['result' => (object) ['aaaa' => 'aaaa']]);
+        })->setWith(['result' => (object) ['aaaa' => 'aaaa']]);
 
         $service2->run();
 
@@ -171,7 +171,7 @@ class ServiceTest extends TestCase
                     'result' => ['required'],
                 ];
             }
-        })->init(['result' => 'result value']);
+        })->setWith(['result' => 'result value']);
 
         $service->run();
 
@@ -189,7 +189,7 @@ class ServiceTest extends TestCase
                     },
                 ];
             }
-        })->init();
+        })->setWith();
 
         $service = (new class extends Service {
             public static function getBindNames()
@@ -210,7 +210,7 @@ class ServiceTest extends TestCase
                     'result' => ['required'],
                 ];
             }
-        })->init([
+        })->setWith([
             'result' => [
                 [get_class($childService)],
                 [get_class($childService)],
@@ -238,7 +238,7 @@ class ServiceTest extends TestCase
                     },
                 ];
             }
-        })->init();
+        })->setWith();
 
         $service = (new class extends Service {
             public static function getBindNames()
@@ -259,7 +259,7 @@ class ServiceTest extends TestCase
                     'result' => ['required'],
                 ];
             }
-        })->init([
+        })->setWith([
             'result' => [get_class($childService)],
         ], []);
 
@@ -295,7 +295,7 @@ class ServiceTest extends TestCase
                     'result' => ['required', 'string'],
                 ];
             }
-        })->init();
+        })->setWith();
 
         $service1->run();
 
@@ -324,7 +324,7 @@ class ServiceTest extends TestCase
                     'result' => ['required', 'string'],
                 ];
             }
-        })->init();
+        })->setWith();
 
         $service2->run();
 
@@ -359,7 +359,7 @@ class ServiceTest extends TestCase
                     'result' => ['required', 'string'],
                 ];
             }
-        })->init();
+        })->setWith();
 
         $service1->run();
 
@@ -390,7 +390,7 @@ class ServiceTest extends TestCase
                     'result' => ['required', 'string'],
                 ];
             }
-        })->init();
+        })->setWith();
 
         $service1->run();
 
@@ -417,7 +417,7 @@ class ServiceTest extends TestCase
                     'result' => ['required', 'string'],
                 ];
             }
-        })->init();
+        })->setWith();
 
         $service2->run();
 
@@ -451,7 +451,7 @@ class ServiceTest extends TestCase
                     'result' => ['required', 'string'],
                 ];
             }
-        })->init();
+        })->setWith();
 
         $service1->run();
 
@@ -493,7 +493,7 @@ class ServiceTest extends TestCase
                     'result.b' => ['array'],
                 ];
             }
-        })->init();
+        })->setWith();
 
         $service->run();
 
@@ -538,7 +538,7 @@ class ServiceTest extends TestCase
                     'result.b.c' => ['string'],
                 ];
             }
-        })->init();
+        })->setWith();
 
         $service->run();
 
@@ -568,7 +568,7 @@ class ServiceTest extends TestCase
                     'result' => ['required'],
                 ];
             }
-        })->init(
+        })->setWith(
             [],
             ['result' => 'result name'],
         );
@@ -598,7 +598,7 @@ class ServiceTest extends TestCase
                     'result' => ['required'],
                 ];
             }
-        })->init([], []);
+        })->setWith([], []);
 
         $service->run();
 
@@ -625,7 +625,7 @@ class ServiceTest extends TestCase
                     'result' => ['required'],
                 ];
             }
-        })->init(
+        })->setWith(
             [],
             [
                 'result' => '{{abcd}}',
@@ -661,7 +661,7 @@ class ServiceTest extends TestCase
                     'result.a.b' => ['required'],
                 ];
             }
-        })->init(
+        })->setWith(
             ['result' => ['a' => ['c' => 'ccc']]],
             ['result' => 'result[...] name'],
         );

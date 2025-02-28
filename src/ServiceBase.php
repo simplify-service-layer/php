@@ -204,7 +204,7 @@ abstract class ServiceBase
             }
         }
 
-        return (new $cls())->init($data, $names);
+        return (new $cls())->setWith($data, $names);
     }
 
     public static function isInitable($value)
@@ -273,38 +273,6 @@ abstract class ServiceBase
         return clone $this->validations;
     }
 
-    public function init(array $inputs = [], array $names = [])
-    {
-        if ($this->isRun) {
-            throw new \Exception('already run service ['.static::class.']');
-        }
-
-        $injectedPropNames = $this->getInjectedPropNames();
-
-        foreach (array_keys($inputs) as $inputKey) {
-            if (in_array($inputKey, $injectedPropNames)) {
-                throw new \Exception($inputKey.' input key is duplicated with property in '.static::class);
-            }
-            if (!preg_match('/^[a-zA-Z][\w-]{0,}/', $inputKey)) {
-                throw new \Exception($inputKey.' input key is not support pattern in '.static::class);
-            }
-        }
-
-        $this->childs = new \ArrayObject();
-        $this->data = new \ArrayObject();
-        $this->errors = new \ArrayObject();
-        $this->inputs = new \ArrayObject($inputs);
-        $this->names = new \ArrayObject($names);
-        $this->validations = new \ArrayObject();
-        $this->isRun = false;
-
-        // defined key validation
-        static::getAllCallbacks();
-        static::getAllLoaders();
-
-        return $this;
-    }
-
     public function run()
     {
         $totalErrors = $this->getTotalErrors();
@@ -368,6 +336,38 @@ abstract class ServiceBase
     public function setParent(self $parent)
     {
         $this->parent = $parent;
+    }
+
+    public function setWith(array $inputs = [], array $names = [])
+    {
+        if ($this->isRun) {
+            throw new \Exception('already run service ['.static::class.']');
+        }
+
+        $injectedPropNames = $this->getInjectedPropNames();
+
+        foreach (array_keys($inputs) as $inputKey) {
+            if (in_array($inputKey, $injectedPropNames)) {
+                throw new \Exception($inputKey.' input key is duplicated with property in '.static::class);
+            }
+            if (!preg_match('/^[a-zA-Z][\w-]{0,}/', $inputKey)) {
+                throw new \Exception($inputKey.' input key is not support pattern in '.static::class);
+            }
+        }
+
+        $this->childs = new \ArrayObject();
+        $this->data = new \ArrayObject();
+        $this->errors = new \ArrayObject();
+        $this->inputs = new \ArrayObject($inputs);
+        $this->names = new \ArrayObject($names);
+        $this->validations = new \ArrayObject();
+        $this->isRun = false;
+
+        // defined key validation
+        static::getAllCallbacks();
+        static::getAllLoaders();
+
+        return $this;
     }
 
     private function filterAvailableExpandedRuleLists($cls, $data, $ruleLists)
