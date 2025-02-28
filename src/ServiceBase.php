@@ -530,7 +530,7 @@ abstract class ServiceBase
             }
         }
         $values = $hasServicesInArray ? $value : [$value];
-        $hasError = false;
+        $hasResolveError = false;
 
         foreach ($values as $i => $v) {
             $service = null;
@@ -557,7 +557,7 @@ abstract class ServiceBase
 
                 if ($this->isResolveError($resolved)) {
                     unset($values[$i]);
-                    $hasError = true;
+                    $hasResolveError = true;
 
                     $this->validations->offsetSet($key, false);
                 }
@@ -566,7 +566,7 @@ abstract class ServiceBase
             }
         }
 
-        if (!$hasError) {
+        if (!$hasResolveError) {
             $this->data->offsetSet($key, $hasServicesInArray ? $values : $values[0]);
         }
 
