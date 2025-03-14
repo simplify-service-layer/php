@@ -364,6 +364,18 @@ abstract class ServiceBase
             }
         }
 
+        foreach (array_keys($inputs) as $key) {
+            if (in_array($key, array_keys((array) $this->inputs))) {
+                throw new \Exception($key.' input key is duplicated in '.static::class);
+            }
+        }
+
+        foreach (array_keys($names) as $key) {
+            if (in_array($key, array_keys((array) $this->names))) {
+                throw new \Exception($key.' name key is duplicated in '.static::class);
+            }
+        }
+
         $this->inputs = new \ArrayObject($inputs);
         $this->names = new \ArrayObject($names);
 
