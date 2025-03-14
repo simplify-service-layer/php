@@ -41,7 +41,7 @@ class ServiceTest extends TestCase
 
         $service->run();
 
-        $this->assertEquals($service->getErrors()->getArrayCopy(), []);
+        $this->assertEquals($service->getErrors(), []);
         $this->assertEquals($service->getData()['result']->aaaa, 'aaaa');
         $this->assertEquals($service->getData()['result']->abcd, 'aaaa');
     }
@@ -87,7 +87,7 @@ class ServiceTest extends TestCase
 
         $service1->run();
 
-        $this->assertEquals($service1->getErrors()->getArrayCopy(), []);
+        $this->assertEquals($service1->getErrors(), []);
         $this->assertEquals($service1->getData()['result']->aaaa, 'aaaa');
         $this->assertEquals($service1->getData()['result']->abcd, 'test1 val');
         $this->assertTrue($service1->getValidations()['result']);
@@ -138,7 +138,7 @@ class ServiceTest extends TestCase
 
         $service2->run();
 
-        $this->assertNotEquals($service2->getErrors()->getArrayCopy(), []);
+        $this->assertNotEquals($service2->getErrors(), []);
         $this->assertFalse($service2->getValidations()['result']);
         $this->assertTrue($service2->getValidations()['test1']);
         $this->assertFalse($service2->getValidations()['test2']);
@@ -175,7 +175,7 @@ class ServiceTest extends TestCase
 
         $service->run();
 
-        $this->assertEquals($service->getErrors()->getArrayCopy(), []);
+        $this->assertEquals($service->getErrors(), []);
     }
 
     public function testLoadDataFromInputChildBatchService()
@@ -218,13 +218,13 @@ class ServiceTest extends TestCase
         ], []);
 
         $service->run();
-        $value = $service->getData()->offsetGet('result');
+        $value = $service->getData()['result'];
 
         $this->assertEquals($value, [
             'child result value',
             'child result value',
         ]);
-        $this->assertEquals($service->getErrors()->getArrayCopy(), []);
+        $this->assertEquals($service->getErrors(), []);
     }
 
     public function testLoadDataFromInputService()
@@ -264,10 +264,10 @@ class ServiceTest extends TestCase
         ], []);
 
         $service->run();
-        $value = $service->getData()->offsetGet('result');
+        $value = $service->getData()['result'];
 
         $this->assertEquals($value, 'child result value');
-        $this->assertEquals($service->getErrors()->getArrayCopy(), []);
+        $this->assertEquals($service->getErrors(), []);
     }
 
     public function testLoadDataFromLoader()
@@ -299,7 +299,7 @@ class ServiceTest extends TestCase
 
         $service1->run();
 
-        $this->assertEquals($service1->getErrors()->getArrayCopy(), []);
+        $this->assertEquals($service1->getErrors(), []);
 
         $service2 = (new class extends Service {
             public static function getBindNames()
@@ -328,7 +328,7 @@ class ServiceTest extends TestCase
 
         $service2->run();
 
-        $this->assertNotEquals($service2->getErrors()->getArrayCopy(), []);
+        $this->assertNotEquals($service2->getErrors(), []);
     }
 
     public function testLoadDataFromLoaderWithDependency()
@@ -363,7 +363,7 @@ class ServiceTest extends TestCase
 
         $service1->run();
 
-        $this->assertEquals($service1->getErrors()->getArrayCopy(), []);
+        $this->assertEquals($service1->getErrors(), []);
         $this->assertEquals($service1->getData()['result'], 'aaaaaa value');
     }
 
@@ -394,7 +394,7 @@ class ServiceTest extends TestCase
 
         $service1->run();
 
-        $this->assertEquals($service1->getErrors()->getArrayCopy(), []);
+        $this->assertEquals($service1->getErrors(), []);
 
         $service2 = (new class extends Service {
             public $result = ['aaa', 'bbb', 'ccc'];
@@ -421,7 +421,7 @@ class ServiceTest extends TestCase
 
         $service2->run();
 
-        $this->assertNotEquals($service2->getErrors()->getArrayCopy(), []);
+        $this->assertNotEquals($service2->getErrors(), []);
     }
 
     public function testLoadDataFromPropertyInDependency()
@@ -455,7 +455,7 @@ class ServiceTest extends TestCase
 
         $service1->run();
 
-        $this->assertEquals($service1->getErrors()->getArrayCopy(), []);
+        $this->assertEquals($service1->getErrors(), []);
         $this->assertEquals($service1->getData()['result'], 'aaaaaa value');
     }
 
@@ -497,9 +497,9 @@ class ServiceTest extends TestCase
 
         $service->run();
 
-        $this->assertFalse($service->getValidations()->offsetGet('result'));
-        $this->assertFalse($service->getValidations()->offsetGet('result.a'));
-        $this->assertTrue($service->getValidations()->offsetGet('result.b'));
+        $this->assertFalse($service->getValidations()['result']);
+        $this->assertFalse($service->getValidations()['result.a']);
+        $this->assertTrue($service->getValidations()['result.b']);
     }
 
     public function testLoadDataKeyInvaildBecauseOfParentRule()
@@ -542,11 +542,11 @@ class ServiceTest extends TestCase
 
         $service->run();
 
-        $this->assertFalse($service->getValidations()->offsetGet('result'));
-        $this->assertFalse($service->getValidations()->offsetGet('result.a'));
-        $this->assertFalse($service->getValidations()->offsetGet('result.a.c'));
-        $this->assertTrue($service->getValidations()->offsetGet('result.b'));
-        $this->assertTrue($service->getValidations()->offsetGet('result.b.c'));
+        $this->assertFalse($service->getValidations()['result']);
+        $this->assertFalse($service->getValidations()['result.a']);
+        $this->assertFalse($service->getValidations()['result.a.c']);
+        $this->assertTrue($service->getValidations()['result.b']);
+        $this->assertTrue($service->getValidations()['result.b.c']);
     }
 
     public function testLoadName()
@@ -575,8 +575,8 @@ class ServiceTest extends TestCase
 
         $service->run();
 
-        $this->assertNotEquals($service->getErrors()->getArrayCopy(), []);
-        $this->assertStringContainsString('result name', $service->getErrors()->getArrayCopy()['result'][0]);
+        $this->assertNotEquals($service->getErrors(), []);
+        $this->assertStringContainsString('result name', $service->getErrors()['result'][0]);
     }
 
     public function testLoadNameBound()
@@ -602,8 +602,8 @@ class ServiceTest extends TestCase
 
         $service->run();
 
-        $this->assertNotEquals($service->getErrors()->getArrayCopy(), []);
-        $this->assertStringContainsString('result name', $service->getErrors()->getArrayCopy()['result'][0]);
+        $this->assertNotEquals($service->getErrors(), []);
+        $this->assertStringContainsString('result name', $service->getErrors()['result'][0]);
     }
 
     public function testLoadNameBoundNested()
@@ -636,8 +636,8 @@ class ServiceTest extends TestCase
 
         $service->run();
 
-        $this->assertNotEquals($service->getErrors()->getArrayCopy(), []);
-        $this->assertStringContainsString('aaaa bbb ccc ddd', $service->getErrors()->getArrayCopy()['result'][0]);
+        $this->assertNotEquals($service->getErrors(), []);
+        $this->assertStringContainsString('aaaa bbb ccc ddd', $service->getErrors()['result'][0]);
     }
 
     public function testLoadNameMultidimension()
@@ -668,6 +668,6 @@ class ServiceTest extends TestCase
 
         $service->run();
 
-        $this->assertNotEquals($service->getErrors()->getArrayCopy(), []);
+        $this->assertNotEquals($service->getErrors(), []);
     }
 }

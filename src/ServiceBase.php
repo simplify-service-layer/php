@@ -8,14 +8,14 @@ abstract class ServiceBase
     private static array $onFailCallbacks = [];
     private static array $onStartCallbacks = [];
     private static array $onSuccessCallbacks = [];
-    private \ArrayObject $childs;
-    private \ArrayObject $data;
-    private \ArrayObject $errors;
-    private \ArrayObject $inputs;
+    private array $childs = [];
+    private array $data = [];
+    private array $errors = [];
+    private array $inputs = [];
     private bool $isRun = false;
-    private \ArrayObject $names;
+    private array $names = [];
     private ?self $parent = null;
-    private \ArrayObject $validations;
+    private array $validations = [];
 
     abstract public static function filterPresentRelatedRule($rule);
 
@@ -58,7 +58,7 @@ abstract class ServiceBase
             }
         }
 
-        return new \ArrayObject($arr);
+        return $arr;
     }
 
     public static function getAllCallbacks()
@@ -82,7 +82,7 @@ abstract class ServiceBase
 
         $arr = array_merge($arr, static::getCallbacks());
 
-        return new \ArrayObject($arr);
+        return $arr;
     }
 
     public static function getAllLoaders()
@@ -106,7 +106,7 @@ abstract class ServiceBase
 
         $arr = array_merge($arr, static::getLoaders());
 
-        return new \ArrayObject($arr);
+        return $arr;
     }
 
     public static function getAllPromiseLists()
@@ -117,7 +117,7 @@ abstract class ServiceBase
             $arr = array_merge_recursive($arr, $cls::getPromiseLists());
         }
 
-        return new \ArrayObject($arr);
+        return $arr;
     }
 
     public static function getAllRuleLists()
@@ -139,7 +139,7 @@ abstract class ServiceBase
             }
         }
 
-        return new \ArrayObject($arr);
+        return $arr;
     }
 
     public static function getAllTraits()
@@ -150,13 +150,13 @@ abstract class ServiceBase
             if (!static::isServiceClass($cls)) {
                 throw new \Exception('trait class must extends Service');
             }
-            $arr = array_merge($arr, $cls::getAllTraits()->getArrayCopy());
+            $arr = array_merge($arr, $cls::getAllTraits());
         }
 
         $arr = array_merge($arr, static::getTraits());
         $arr = array_unique($arr);
 
-        return new \ArrayObject($arr);
+        return $arr;
     }
 
     public static function getBindNames()
@@ -219,17 +219,17 @@ abstract class ServiceBase
 
     public function getChilds()
     {
-        return clone $this->childs;
+        return array_merge($this->childs);
     }
 
     public function getData()
     {
-        return clone $this->data;
+        return array_merge($this->data);
     }
 
     public function getErrors()
     {
-        return clone $this->errors;
+        return array_merge($this->errors);
     }
 
     public function getInjectedPropNames()
@@ -246,17 +246,17 @@ abstract class ServiceBase
 
     public function getInputs()
     {
-        return clone $this->inputs;
+        return array_merge($this->inputs);
     }
 
     public function getNames()
     {
-        return clone $this->names;
+        return array_merge($this->names);
     }
 
     public function getTotalErrors()
     {
-        $errors = $this->getErrors()->getArrayCopy();
+        $errors = $this->getErrors();
 
         foreach ($this->getChilds() as $k => $child) {
             $childErrors = $child->getTotalErrors();
@@ -270,7 +270,7 @@ abstract class ServiceBase
 
     public function getValidations()
     {
-        return clone $this->validations;
+        return array_merge($this->validations);
     }
 
     public function run()
@@ -279,10 +279,10 @@ abstract class ServiceBase
             throw new \Exception('already run service ['.static::class.']');
         }
 
-        $this->childs = new \ArrayObject();
-        $this->data = new \ArrayObject();
-        $this->errors = new \ArrayObject();
-        $this->validations = new \ArrayObject();
+        $this->childs = [];
+        $this->data = [];
+        $this->errors = [];
+        $this->validations = [];
 
         $totalErrors = $this->getTotalErrors();
 
@@ -325,7 +325,7 @@ abstract class ServiceBase
             $this->isRun = true;
         }
 
-        if (empty($totalErrors) && !$this->getData()->offsetExists('result')) {
+        if (empty($totalErrors) && !in_array('result', array_keys($this->getData()))) {
             throw new \Exception('result data key is not exists in '.static::class);
         }
 
@@ -334,10 +334,10 @@ abstract class ServiceBase
                 return $this->resolveError();
             }
 
-            return $this->getData()->offsetGet('result');
+            return $this->getData()['result'];
         }
 
-        $result = $this->getData()->offsetExists('result') ? $this->getData()->offsetGet('result') : null;
+        $result = in_array('result', array_keys($this->getData())) ? $this->getData()['result'] : null;
 
         return $this->getResponseBody($result, $totalErrors);
     }
@@ -376,8 +376,8 @@ abstract class ServiceBase
             }
         }
 
-        $this->inputs = new \ArrayObject(array_merge($this->inputs, $inputs));
-        $this->names = new \ArrayObject(array_merge($this->names, $names));
+        $this->inputs = array_merge($this->inputs, $inputs);
+        $this->names = array_merge($this->names, $names);
 
         // defined key validation
         static::getAllCallbacks();
@@ -516,14 +516,14 @@ abstract class ServiceBase
     private function getLoadedDataWith($key)
     {
         $data = $this->getData();
-        $loader = $this->getAllLoaders()->offsetExists($key) ? $this->getAllLoaders()->offsetGet($key) : null;
+        $loader = in_array($key, array_keys($this->getAllLoaders())) ? $this->getAllLoaders()[$key] : null;
 
-        if ($data->offsetExists($key)) {
+        if (in_array($key, array_keys($data))) {
             return $data;
         }
 
-        if ($this->getInputs()->offsetExists($key)) {
-            $value = $this->getInputs()->offsetGet($key);
+        if (in_array($key, array_keys($this->getInputs()))) {
+            $value = $this->getInputs()[$key];
         } elseif (in_array($key, $this->getInjectedPropNames())) {
             $value = $this->{$key};
         } else {
@@ -569,13 +569,13 @@ abstract class ServiceBase
             }
 
             if ($service) {
-                $this->childs->offsetSet($hasServicesInArray ? $key.'.'.$i : $key, $service);
+                $this->childs[$hasServicesInArray ? $key.'.'.$i : $key] = $service;
 
                 if ($this->isResolveError($resolved)) {
                     unset($values[$i]);
                     $hasResolveError = true;
 
-                    $this->validations->offsetSet($key, false);
+                    $this->validations[$key] = false;
                 }
 
                 $values[$i] = $resolved;
@@ -583,7 +583,7 @@ abstract class ServiceBase
         }
 
         if (!$hasResolveError) {
-            $this->data->offsetSet($key, $hasServicesInArray ? $values : $values[0]);
+            $this->data[$key] = $hasServicesInArray ? $values : $values[0];
         }
 
         return $this->data;
@@ -591,10 +591,10 @@ abstract class ServiceBase
 
     private function getOrderedCallbackKeys($key)
     {
-        $promiseKeys = array_filter(array_keys($this->getAllPromiseLists()->getArrayCopy()), function ($value) use ($key) {
+        $promiseKeys = array_filter(array_keys($this->getAllPromiseLists()), function ($value) use ($key) {
             return preg_match('/^'.$key.'\__/', $value);
         });
-        $allKeys = array_filter(array_keys($this->getAllCallbacks()->getArrayCopy()), function ($value) use ($key) {
+        $allKeys = array_filter(array_keys($this->getAllCallbacks()), function ($value) use ($key) {
             return preg_match('/^'.$key.'\__/', $value);
         });
         $orderedKeys = $this->getShouldOrderedCallbackKeys($promiseKeys);
@@ -605,7 +605,7 @@ abstract class ServiceBase
 
     private function getRelatedRuleLists($key, $cls)
     {
-        $ruleLists = $this->getAllRuleLists()->offsetExists($cls) ? $this->getAllRuleLists()->getArrayCopy()[$cls] : [];
+        $ruleLists = in_array($cls, array_keys($this->getAllRuleLists())) ? $this->getAllRuleLists()[$cls] : [];
         $filterLists = array_filter($ruleLists, function ($k) use ($key) {
             return preg_match('/^'.$key.'$/', $k) || preg_match('/^'.$key.'\./', $k);
         }, ARRAY_FILTER_USE_KEY);
@@ -626,7 +626,7 @@ abstract class ServiceBase
         $arr = [];
 
         foreach ($keys as $key) {
-            $deps = $this->getAllPromiseLists()->offsetExists($key) ? $this->getAllPromiseLists()->offsetGet($key) : [];
+            $deps = in_array($key, array_keys($this->getAllPromiseLists())) ? $this->getAllPromiseLists()[$key] : [];
             $orderedKeys = $this->getShouldOrderedCallbackKeys($deps);
             $arr = [...$orderedKeys, $key, ...$arr];
         }
@@ -662,9 +662,9 @@ abstract class ServiceBase
         $params = (new \ReflectionFunction($resolver))->getParameters();
 
         foreach ($depNames as $i => $depName) {
-            if ($this->validations->offsetGet($depName) && $this->data->offsetExists($depName)) {
-                $depVals[] = $this->data->offsetGet($depName);
-            } elseif ($this->validations->offsetGet($depName) && $params[$i]->isDefaultValueAvailable()) {
+            if ($this->validations[$depName] && in_array($depName, array_keys($this->data))) {
+                $depVals[] = $this->data[$depName];
+            } elseif ($this->validations[$depName] && $params[$i]->isDefaultValueAvailable()) {
                 $depVals[] = $params[$i]->getDefaultValue();
             } else {
                 return $this->resolveError();
@@ -680,13 +680,13 @@ abstract class ServiceBase
             $key = $boundKeys[0];
             $keySegs = explode('.', $key);
             $mainKey = $keySegs[0];
-            $bindNames = new \ArrayObject(array_merge(
-                $this->getAllBindNames()->getArrayCopy(),
-                $this->names->getArrayCopy(),
-            ));
+            $bindNames = array_merge(
+                $this->getAllBindNames(),
+                $this->names,
+            );
 
-            if ($bindNames->offsetExists($mainKey)) {
-                $bindName = $bindNames->offsetGet($mainKey);
+            if (in_array($mainKey, array_keys($bindNames))) {
+                $bindName = $bindNames[$mainKey];
             } else {
                 throw new \Exception('"'.$mainKey.'" name not exists in '.static::class);
             }
@@ -719,7 +719,7 @@ abstract class ServiceBase
 
     private function runAllDeferCallbacks()
     {
-        $callbacks = array_filter($this->getAllCallbacks()->getArrayCopy(), function ($value) {
+        $callbacks = array_filter($this->getAllCallbacks(), function ($value) {
             return preg_match('/:defer$/', $value);
         }, ARRAY_FILTER_USE_KEY);
 
@@ -738,8 +738,8 @@ abstract class ServiceBase
         $depths = explode('|', $depth);
         $mainKey = explode('.', $key)[0];
 
-        if ($this->validations->offsetExists($key)) {
-            return $this->validations->offsetGet($key);
+        if (in_array($key, array_keys($this->validations))) {
+            return $this->validations[$key];
         }
 
         if (count(array_filter($depths, function ($seg) use ($key) {
@@ -751,29 +751,29 @@ abstract class ServiceBase
         $keySegs = explode('.', $key);
         for ($i = 0; $i < count($keySegs) - 1; ++$i) {
             $parentKey = implode('.', array_slice($keySegs, 0, $i + 1));
-            if ($this->validations->offsetExists($parentKey) && true === $this->validations->offsetGet($parentKey)) {
-                $this->validations->offsetSet($key, true);
+            if (in_array($parentKey, array_keys($this->validations)) && true === $this->validations[$parentKey]) {
+                $this->validations[$key] = true;
 
                 return true;
             }
         }
 
-        $promiseList = $this->getAllPromiseLists()->offsetExists($mainKey) ? $this->getAllPromiseLists()->offsetGet($mainKey) : [];
+        $promiseList = in_array($mainKey, array_keys($this->getAllPromiseLists())) ? $this->getAllPromiseLists()[$mainKey] : [];
 
         foreach ($promiseList as $promise) {
             if (!$this->validate($promise, $depth)) {
-                $this->validations->offsetSet($mainKey, false);
+                $this->validations[$mainKey] = false;
 
                 return false;
             }
         }
 
-        $loader = $this->getAllLoaders()->offsetExists($mainKey) ? $this->getAllLoaders()->offsetGet($mainKey) : null;
+        $loader = in_array($mainKey, array_keys($this->getAllLoaders())) ? $this->getAllLoaders()[$mainKey] : null;
         $deps = $loader ? $this->getClosureDependencies($loader) : [];
 
         foreach ($deps as $dep) {
             if (!$this->validate($dep, $depth)) {
-                $this->validations->offsetSet($mainKey, false);
+                $this->validations[$mainKey] = false;
             }
         }
 
@@ -783,34 +783,34 @@ abstract class ServiceBase
         $this->validateWith($key, $items, $depth);
 
         // unnecessary because data is stored already.
-        if ($data->offsetExists($key)) {
-            $this->data->offsetSet($key, $data->offsetGet($key));
+        if (in_array($key, array_keys($data))) {
+            $this->data[$key] = $data[$key];
         }
 
         $orderedCallbackKeys = $this->getOrderedCallbackKeys($key);
         $callbacks = $this->getAllCallbacks();
 
         foreach ($orderedCallbackKeys as $callbackKey) {
-            $callback = $callbacks->offsetGet($callbackKey);
+            $callback = $callbacks[$callbackKey];
             $deps = $this->getClosureDependencies($callback);
 
             foreach ($deps as $dep) {
                 if (!$this->validate($dep, $depth)) {
-                    $this->validations->offsetSet($key, false);
+                    $this->validations[$key] = false;
                 }
             }
         }
 
-        if (true === $this->validations->offsetGet($key)) {
+        if (true === $this->validations[$key]) {
             foreach ($orderedCallbackKeys as $callbackKey) {
                 if (!preg_match('/@defer$/', $callbackKey)) {
-                    $callback = $callbacks->offsetGet($callbackKey);
+                    $callback = $callbacks[$callbackKey];
                     $this->resolve($callback);
                 }
             }
         }
 
-        if (false === $this->validations->offsetGet($key)) {
+        if (false === $this->validations[$key]) {
             return false;
         }
 
@@ -856,7 +856,7 @@ abstract class ServiceBase
                         }
 
                         if (!$this->validate($depKey, $depth)) {
-                            $this->validations->offsetSet($key, false);
+                            $this->validations[$key] = false;
                             unset($ruleLists[$k][$j]);
                         }
                         $names[$depKey] = $this->resolveBindName('{{'.$depKey.'}}');
@@ -879,28 +879,28 @@ abstract class ServiceBase
                 );
 
                 if (!empty($errorLists)) {
-                    if (!$this->errors->offsetExists($ruleKey)) {
-                        $this->errors->offsetSet($ruleKey, []);
+                    if (!in_array($ruleKey, array_keys($this->errors))) {
+                        $this->errors[$ruleKey] = [];
                     }
                     foreach ($errorLists[$ruleKey] as $error) {
-                        $errors = $this->errors->offsetGet($ruleKey);
+                        $errors = $this->errors[$ruleKey];
                         if (!in_array($error, $errors)) {
                             array_push($errors, $error);
-                            $this->errors->offsetSet($ruleKey, $errors);
+                            $this->errors[$ruleKey] = $errors;
                         }
                     }
-                    $this->validations->offsetSet($key, false);
+                    $this->validations[$key] = false;
 
                     return false;
                 }
             }
         }
 
-        if ($this->validations->offsetExists($key) && false === $this->validations->offsetGet($key)) {
+        if (in_array($key, array_keys($this->validations)) && false === $this->validations[$key]) {
             return false;
         }
 
-        $this->validations->offsetSet($key, true);
+        $this->validations[$key] = true;
 
         return true;
     }
