@@ -275,6 +275,15 @@ abstract class ServiceBase
 
     public function run()
     {
+        if ($this->isRun) {
+            throw new \Exception('already run service ['.static::class.']');
+        }
+
+        $this->childs = new \ArrayObject();
+        $this->data = new \ArrayObject();
+        $this->errors = new \ArrayObject();
+        $this->validations = new \ArrayObject();
+
         $totalErrors = $this->getTotalErrors();
 
         if (!$this->isRun) {
@@ -355,13 +364,8 @@ abstract class ServiceBase
             }
         }
 
-        $this->childs = new \ArrayObject();
-        $this->data = new \ArrayObject();
-        $this->errors = new \ArrayObject();
         $this->inputs = new \ArrayObject($inputs);
         $this->names = new \ArrayObject($names);
-        $this->validations = new \ArrayObject();
-        $this->isRun = false;
 
         // defined key validation
         static::getAllCallbacks();
