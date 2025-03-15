@@ -376,8 +376,8 @@ abstract class ServiceBase
             }
         }
 
-        $this->inputs = new \ArrayObject($inputs);
-        $this->names = new \ArrayObject($names);
+        $this->inputs = new \ArrayObject(array_merge($this->inputs, $inputs));
+        $this->names = new \ArrayObject(array_merge($this->names, $names));
 
         // defined key validation
         static::getAllCallbacks();
