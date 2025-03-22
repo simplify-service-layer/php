@@ -376,6 +376,12 @@ abstract class ServiceBase
             }
         }
 
+        foreach (array_keys($inputs) as $key) {
+            if ('' === $inputs[$key]) {
+                unset($inputs[$key]);
+            }
+        }
+
         $this->inputs = array_merge($this->inputs, $inputs);
         $this->names = array_merge($this->names, $names);
 
