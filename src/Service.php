@@ -8,7 +8,7 @@ class Service extends ServiceBase
 {
     public static function filterPresentRelatedRule($rule)
     {
-        return preg_match('/^required/', $rule) ? $rule : null;
+        return preg_match('/^required/', $rule) || preg_match('/^present/', $rule) ? $rule : null;
     }
 
     public static function getDependencyKeysInRule($rule)
