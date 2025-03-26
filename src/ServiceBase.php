@@ -848,10 +848,6 @@ abstract class ServiceBase
             $ruleLists = $this->getRelatedRuleLists($key, $cls);
             $ruleLists = $this->filterAvailableExpandedRuleLists($cls, $items, $ruleLists);
 
-            if (!empty($ruleLists)) {
-                $names[$mainKey] = $this->resolveBindName('{{'.$mainKey.'}}');
-            }
-
             foreach ($ruleLists as $k => $ruleList) {
                 foreach ($ruleList as $j => $rule) {
                     $depKeysInRule = $cls::getDependencyKeysInRule($rule);
@@ -887,7 +883,9 @@ abstract class ServiceBase
             }
 
             foreach ($ruleLists as $k => $ruleList) {
-                $names[$k] = $this->resolveBindName('{{'.$k.'}}');
+                if (!empty($ruleList)) {
+                    $names[$k] = $this->resolveBindName('{{'.$k.'}}');
+                }
             }
 
             $messages = $cls::getValidationErrorTemplateMessages();
