@@ -331,6 +331,35 @@ class ServiceTest extends TestCase
         $this->assertNotEquals($service2->getErrors(), []);
     }
 
+    public function testLoadDataFromLoaderWithDefaultValue()
+    {
+        $service1 = (new class extends Service {
+            public static function getBindNames()
+            {
+                return [];
+            }
+
+            public static function getLoaders()
+            {
+                return [
+                    'result' => function ($key1 = 'abcd') {
+                        return $key1;
+                    },
+                ];
+            }
+
+            public static function getRuleLists()
+            {
+                return [];
+            }
+        })->setWith();
+
+        $service1->run();
+
+        $this->assertEquals($service1->getErrors(), []);
+        $this->assertEquals($service1->getData()['result'], 'abcd');
+    }
+
     public function testLoadDataFromLoaderWithDependency()
     {
         $service1 = (new class extends Service {
