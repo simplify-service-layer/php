@@ -541,10 +541,11 @@ abstract class ServiceBase
         return $matches[1];
     }
 
-    private function getClosureDependencies(\Closure $func)
+    private function getClosureDependencies(\Closure $func, $excludeProps = true)
     {
         $deps = [];
         $params = (new \ReflectionFunction($func))->getParameters();
+        $props = $this->getInjectedPropNames();
 
         foreach ($params as $i => $param) {
             $dep = $param->name;
@@ -555,7 +556,13 @@ abstract class ServiceBase
                 $dep = mb_strtolower($dep, 'UTF-8');
             }
 
-            $deps[] = $dep;
+            if ($excludeProps) {
+                if (!in_array($dep, $props)) {
+                    array_push($deps, $dep);
+                }
+            } else {
+                array_push($deps, $dep);
+            }
         }
 
         return $deps;
@@ -572,8 +579,6 @@ abstract class ServiceBase
 
         if (in_array($key, array_keys($this->getInputs()))) {
             $value = $this->getInputs()[$key];
-        } elseif (in_array($key, $this->getInjectedPropNames())) {
-            $value = $this->{$key};
         } else {
             if (empty($loader)) {
                 return $data;
@@ -705,15 +710,22 @@ abstract class ServiceBase
     private function resolve($func)
     {
         $resolver = \Closure::bind($func, $this);
-        $depNames = $this->getClosureDependencies($func);
+        $props = $this->getInjectedPropNames();
+        $depNames = $this->getClosureDependencies($func, false);
         $depVals = [];
-        $params = (new \ReflectionFunction($resolver))->getParameters();
+        $params = [];
+
+        foreach ((new \ReflectionFunction($resolver))->getParameters() as $param) {
+            $params[$param->getName()] = $param;
+        }
 
         foreach ($depNames as $i => $depName) {
-            if ($this->validations[$depName] && in_array($depName, array_keys($this->data))) {
+            if (in_array($depName, $props)) {
+                $depVals[] = $this->{$depName};
+            } elseif ($this->validations[$depName] && in_array($depName, array_keys($this->data))) {
                 $depVals[] = $this->data[$depName];
-            } elseif ($this->validations[$depName] && $params[$i]->isDefaultValueAvailable()) {
-                $depVals[] = $params[$i]->getDefaultValue();
+            } elseif ($this->validations[$depName] && $params[$depName]->isDefaultValueAvailable()) {
+                $depVals[] = $params[$depName]->getDefaultValue();
             } else {
                 return $this->resolveError();
             }

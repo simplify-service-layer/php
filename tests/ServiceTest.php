@@ -370,18 +370,23 @@ class ServiceTest extends TestCase
     public function testLoadDataFromProperty()
     {
         $service1 = (new class extends Service {
-            public $result = 'aaa';
+            public $key1 = 'aaa';
 
             public static function getBindNames()
             {
                 return [
+                    'key1' => 'name for key1',
                     'result' => 'name for result',
                 ];
             }
 
             public static function getLoaders()
             {
-                return [];
+                return [
+                    'result' => function ($key1) {
+                        return $key1;
+                    },
+                ];
             }
 
             public static function getRuleLists()
@@ -397,18 +402,23 @@ class ServiceTest extends TestCase
         $this->assertEquals($service1->getErrors(), []);
 
         $service2 = (new class extends Service {
-            public $result = ['aaa', 'bbb', 'ccc'];
+            public $key1 = ['aaa', 'bbb', 'ccc'];
 
             public static function getBindNames()
             {
                 return [
+                    'key1' => 'name for key1',
                     'result' => 'name for result',
                 ];
             }
 
             public static function getLoaders()
             {
-                return [];
+                return [
+                    'result' => function ($key1) {
+                        return $key1;
+                    },
+                ];
             }
 
             public static function getRuleLists()
