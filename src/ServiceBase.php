@@ -273,6 +273,44 @@ abstract class ServiceBase
         return array_merge($this->validations);
     }
 
+    public function resolveBindName(string $name)
+    {
+        while ($boundKeys = $this->getBindKeysInName($name)) {
+            $key = $boundKeys[0];
+            $keySegs = explode('.', $key);
+            $mainKey = $keySegs[0];
+            $bindNames = array_merge(
+                $this->getAllBindNames(),
+                $this->names,
+            );
+
+            if (in_array($mainKey, array_keys($bindNames))) {
+                $bindName = $bindNames[$mainKey];
+            } else {
+                throw new \Exception('"'.$mainKey.'" name not exists in '.static::class);
+            }
+
+            $pattern = '/\{\{(\s*)'.$key.'(\s*)\}\}/';
+            $replace = $this->resolveBindName($bindName);
+            $name = preg_replace($pattern, $replace, $name);
+            $matches = [];
+            preg_match_all('/\[\.\.\.\]/', $name, $matches);
+            if (count($matches) > 1) {
+                throw new \Exception($name.' has multiple "[...]" string in '.static::class);
+            }
+            if ($this->hasArrayObjectRuleInRuleLists($mainKey) && empty($matches)) {
+                throw new \Exception('"'.$mainKey.'" name is required "[...]" string in '.static::class);
+            }
+
+            if (count($keySegs) > 1) {
+                $replace = '['.implode('][', array_slice($keySegs, 1)).']';
+                $name = preg_replace('/\[\.\.\.\]/', $replace, $name);
+            }
+        }
+
+        return $name;
+    }
+
     public function run()
     {
         if ($this->isRun) {
@@ -290,6 +328,10 @@ abstract class ServiceBase
             if (!$this->parent) {
                 foreach (static::$onStartCallbacks as $callback) {
                     $callback();
+                }
+            } else {
+                foreach (array_keys($this->names) as $key) {
+                    $this->names[$key] = $this->parent->resolveBindName($this->names[$key]);
                 }
             }
 
@@ -678,44 +720,6 @@ abstract class ServiceBase
         }
 
         return call_user_func_array($resolver, $depVals);
-    }
-
-    private function resolveBindName(string $name)
-    {
-        while ($boundKeys = $this->getBindKeysInName($name)) {
-            $key = $boundKeys[0];
-            $keySegs = explode('.', $key);
-            $mainKey = $keySegs[0];
-            $bindNames = array_merge(
-                $this->getAllBindNames(),
-                $this->names,
-            );
-
-            if (in_array($mainKey, array_keys($bindNames))) {
-                $bindName = $bindNames[$mainKey];
-            } else {
-                throw new \Exception('"'.$mainKey.'" name not exists in '.static::class);
-            }
-
-            $pattern = '/\{\{(\s*)'.$key.'(\s*)\}\}/';
-            $replace = $this->resolveBindName($bindName);
-            $name = preg_replace($pattern, $replace, $name);
-            $matches = [];
-            preg_match_all('/\[\.\.\.\]/', $name, $matches);
-            if (count($matches) > 1) {
-                throw new \Exception($name.' has multiple "[...]" string in '.static::class);
-            }
-            if ($this->hasArrayObjectRuleInRuleLists($mainKey) && empty($matches)) {
-                throw new \Exception('"'.$mainKey.'" name is required "[...]" string in '.static::class);
-            }
-
-            if (count($keySegs) > 1) {
-                $replace = '['.implode('][', array_slice($keySegs, 1)).']';
-                $name = preg_replace('/\[\.\.\.\]/', $replace, $name);
-            }
-        }
-
-        return $name;
     }
 
     private function resolveError()
